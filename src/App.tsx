@@ -13,6 +13,7 @@ import LearnHomePage from '@/pages/learn/LearnHomePage';
 import ProfilePage from '@/pages/learn/ProfilePage';
 import LevelPage from '@/pages/learn/LevelPage';
 import TheoryLessonPage from '@/pages/learn/TheoryLessonPage';
+import QrPage from '@/pages/learn/QrPage';
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
               <Route path="/learn" element={<LearnLayout />}>
                 <Route index element={<LearnHomePage />} />
                 <Route path="profile" element={<ProfilePage />} />
+                <Route path="qr" element={<QrPage />} />
                 <Route path="level/:levelId" element={<LevelPage />} />
                 <Route
                   path="level/:levelId/theory/:theoryId"

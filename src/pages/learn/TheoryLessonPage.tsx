@@ -1,7 +1,15 @@
-import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { ChevronLeft } from 'lucide-react';
+import {
+  BadgeCheck,
+  ChevronLeft,
+  Heart,
+  HeartCrack,
+  PartyPopper,
+  Home,
+  XCircle,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
 import mobileApi from '@/services/api';
@@ -9,19 +17,32 @@ import type { MobileQuestion } from '@/services/api';
 import { queryClient } from '@/queryClient';
 import clsx from 'clsx';
 
-const LIVES_START = 5;
-
 export default function TheoryLessonPage() {
   const { levelId, theoryId } = useParams<{
     levelId: string;
     theoryId: string;
   }>();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [phase, setPhase] = useState<'read' | 'quiz' | 'done'>('read');
   const [qIndex, setQIndex] = useState(0);
-  const [lives, setLives] = useState(LIVES_START);
   const [lastXp, setLastXp] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
+  const [outOfLives, setOutOfLives] = useState(false);
+
+  const progressQuery = useQuery({
+    queryKey: ['progress-me'],
+    queryFn: () => mobileApi.getMyProgress(),
+  });
+
+  const heartsCount = progressQuery.data?.hearts?.heartsCount ?? 0;
+  const heartsMax = progressQuery.data?.hearts?.maxHearts ?? 5;
+  const heartsUi = useMemo(() => {
+    const cnt = Math.max(0, Math.min(heartsMax, heartsCount));
+    return { cnt, empty: Math.max(0, heartsMax - cnt) };
+  }, [heartsCount, heartsMax]);
+
+  const canDoQuiz = heartsCount > 0;
 
   const theoryQuery = useQuery({
     queryKey: ['theory', theoryId],
@@ -51,7 +72,9 @@ export default function TheoryLessonPage() {
     onSuccess: (res) => {
       setFeedback(res.isCorrect ? 'correct' : 'wrong');
       setLastXp((x) => x + res.xpEarned);
-      if (!res.isCorrect) setLives((l) => Math.max(0, l - 1));
+      if (!res.isCorrect && heartsCount <= 1) {
+        setOutOfLives(true);
+      }
       queryClient.invalidateQueries({ queryKey: ['progress-me'] });
       queryClient.invalidateQueries({ queryKey: ['level-detail', levelId] });
     },
@@ -59,11 +82,13 @@ export default function TheoryLessonPage() {
 
   const onPickOption = (optionId: string) => {
     if (!question || feedback || answerMut.isPending) return;
+    if (!canDoQuiz) return;
     answerMut.mutate({ questionId: question.id, selectedOptionId: optionId });
   };
 
   const nextQuestion = () => {
     setFeedback(null);
+    setOutOfLives(false);
     if (qIndex + 1 >= questions.length) {
       setPhase('done');
       return;
@@ -118,8 +143,17 @@ export default function TheoryLessonPage() {
             />
             <button
               type="button"
-              onClick={() => setPhase('quiz')}
-              className="w-full rounded-2xl bg-blue-600 py-4 font-semibold text-white shadow-lg"
+              onClick={() => {
+                if (!canDoQuiz) return;
+                setPhase('quiz');
+              }}
+              disabled={!canDoQuiz}
+              className={clsx(
+                'w-full rounded-2xl py-4 font-semibold shadow-lg transition',
+                canDoQuiz
+                  ? 'bg-blue-600 text-white'
+                  : 'cursor-not-allowed bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+              )}
             >
               {t({
                 uz: 'Savollarni boshlash',
@@ -127,6 +161,15 @@ export default function TheoryLessonPage() {
                 ru: 'Начать вопросы',
               })}
             </button>
+            {!canDoQuiz && (
+              <p className="mt-3 text-center text-sm text-rose-600 dark:text-rose-400">
+                {t({
+                  uz: 'Jon tugagan. Savollar ishlash uchun ertaga qayta urinib ko‘ring.',
+                  en: 'No lives left. Try again tomorrow.',
+                  ru: 'Жизни закончились. Попробуйте завтра.',
+                })}
+              </p>
+            )}
           </motion.div>
         )}
 
@@ -157,9 +200,19 @@ export default function TheoryLessonPage() {
               <span className="text-slate-500">
                 {qIndex + 1}/{questions.length}
               </span>
-              <span className="text-rose-600 dark:text-rose-400">
-                {t({ uz: 'Jon', en: 'Lives', ru: 'Жизни' })}: {'❤️'.repeat(lives)}
-                {lives === 0 && ' 💔'}
+              <span className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                <span>{t({ uz: 'Jon', en: 'Lives', ru: 'Жизни' })}:</span>
+                <span className="inline-flex items-center gap-1">
+                  {Array.from({ length: heartsUi.cnt }).map((_, i) => (
+                    <Heart key={`h-${i}`} className="h-4 w-4 fill-current" />
+                  ))}
+                  {Array.from({ length: heartsUi.empty }).map((_, i) => (
+                    <HeartCrack
+                      key={`e-${i}`}
+                      className="h-4 w-4 opacity-60"
+                    />
+                  ))}
+                </span>
               </span>
             </div>
 
@@ -174,12 +227,13 @@ export default function TheoryLessonPage() {
                   <button
                     key={opt.id}
                     type="button"
-                    disabled={!!feedback || answerMut.isPending}
+                    disabled={!!feedback || answerMut.isPending || !canDoQuiz}
                     onClick={() => onPickOption(opt.id)}
                     className={clsx(
                       'rounded-2xl border px-4 py-4 text-left font-medium transition',
                       'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900',
                       feedback && 'opacity-80',
+                      !canDoQuiz && 'opacity-60',
                     )}
                   >
                     {opt.optionText}
@@ -196,26 +250,57 @@ export default function TheoryLessonPage() {
               <motion.div
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-4 rounded-2xl bg-slate-100 px-4 py-3 dark:bg-slate-800"
+                className={clsx(
+                  'mt-4 rounded-2xl border px-4 py-3',
+                  feedback === 'correct'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-100'
+                    : 'border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-100',
+                )}
               >
-                <p
-                  className={
-                    feedback === 'correct'
-                      ? 'text-emerald-700 dark:text-emerald-400'
-                      : 'text-rose-700 dark:text-rose-400'
-                  }
-                >
-                  {feedback === 'correct'
-                    ? t({ uz: 'To‘g‘ri!', en: 'Correct!', ru: 'Верно!' })
-                    : t({ uz: 'Noto‘g‘ri', en: 'Wrong', ru: 'Неверно' })}
-                </p>
+                <div className="flex items-center gap-2">
+                  {feedback === 'correct' ? (
+                    <BadgeCheck className="h-5 w-5 text-emerald-700 dark:text-emerald-300" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-rose-700 dark:text-rose-300" />
+                  )}
+                  <p className="font-semibold">
+                    {feedback === 'correct'
+                      ? t({ uz: 'To‘g‘ri!', en: 'Correct!', ru: 'Верно!' })
+                      : t({ uz: 'Noto‘g‘ri', en: 'Wrong', ru: 'Неверно' })}
+                  </p>
+                </div>
                 <button
                   type="button"
-                  onClick={nextQuestion}
-                  className="mt-3 w-full rounded-xl bg-blue-600 py-3 text-white"
+                  onClick={() => {
+                    if (feedback === 'wrong' && outOfLives) {
+                      navigate('/learn', { replace: true });
+                      return;
+                    }
+                    nextQuestion();
+                  }}
+                  className={clsx(
+                    'mt-3 w-full rounded-xl py-3 font-semibold',
+                    feedback === 'correct'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-rose-600 text-white',
+                  )}
                 >
-                  {t({ uz: 'Keyingisi', en: 'Next', ru: 'Далее' })}
+                  {feedback === 'wrong' && outOfLives
+                    ? t({ uz: 'Bosh menyu', en: 'Main menu', ru: 'Главное меню' })
+                    : t({ uz: 'Keyingisi', en: 'Next', ru: 'Далее' })}
                 </button>
+                {feedback === 'wrong' && outOfLives ? (
+                  <div className="mt-3 flex items-center justify-center gap-2 text-sm text-rose-700/80 dark:text-rose-200/80">
+                    <Home className="h-4 w-4" />
+                    <span>
+                      {t({
+                        uz: 'Jon tugadi. Davom etish uchun ertaga qayting.',
+                        en: 'No lives left. Come back tomorrow.',
+                        ru: 'Жизни закончились. Возвращайтесь завтра.',
+                      })}
+                    </span>
+                  </div>
+                ) : null}
               </motion.div>
             )}
           </motion.div>
@@ -228,7 +313,9 @@ export default function TheoryLessonPage() {
             animate={{ opacity: 1, scale: 1 }}
             className="flex flex-col items-center py-10 text-center"
           >
-            <div className="mb-4 text-5xl">🎉</div>
+            <div className="mb-4 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+              <PartyPopper className="h-8 w-8" />
+            </div>
             <h2 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">
               {t({ uz: 'Yakunlandi!', en: 'Completed!', ru: 'Готово!' })}
             </h2>

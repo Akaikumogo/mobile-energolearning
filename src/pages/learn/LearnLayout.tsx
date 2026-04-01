@@ -1,5 +1,5 @@
 import { Navigate, Outlet, NavLink } from 'react-router-dom';
-import { Home, User } from 'lucide-react';
+import { Crown, Home, QrCode, Trophy, User } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from '@/hooks/useTranslation';
 import mobileApi from '@/services/api';
@@ -26,6 +26,12 @@ export default function LearnLayout() {
   }
 
   const xp = progress?.totalXp ?? 0;
+  const globalRankQuery = useQuery({
+    queryKey: ['leaderboard-global-me'],
+    queryFn: () => mobileApi.getGlobalLeaderboard(1),
+    enabled: !blockForOrg,
+  });
+  const myGlobalRank = globalRankQuery.data?.me?.rank ?? null;
 
   return (
     <div className="flex min-h-dvh flex-col bg-slate-50 dark:bg-slate-950">
@@ -34,9 +40,22 @@ export default function LearnLayout() {
           <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
             ElektroLearn
           </p>
-          <p className="text-sm font-bold text-slate-900 dark:text-white">
-            ⚡ {xp} XP
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-sm font-bold text-slate-900 dark:text-white">
+              <span className="inline-flex items-center gap-1">
+                <Trophy className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <span>{xp} XP</span>
+              </span>
+            </p>
+            {typeof myGlobalRank === 'number' ? (
+              <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <span className="inline-flex items-center gap-1">
+                  <Crown className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <span>#{myGlobalRank}</span>
+                </span>
+              </p>
+            ) : null}
+          </div>
         </div>
         <ThemeToggle />
       </header>
@@ -61,6 +80,20 @@ export default function LearnLayout() {
           >
             <Home className="h-5 w-5" />
             {t({ uz: 'Bosh sahifa', en: 'Home', ru: 'Главная' })}
+          </NavLink>
+          <NavLink
+            to="/learn/qr"
+            className={({ isActive }) =>
+              clsx(
+                'flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium',
+                isActive
+                  ? 'text-amber-600 dark:text-amber-400'
+                  : 'text-slate-500 dark:text-slate-400',
+              )
+            }
+          >
+            <QrCode className="h-5 w-5" />
+            {t({ uz: 'QR', en: 'QR', ru: 'QR' })}
           </NavLink>
           <NavLink
             to="/learn/profile"

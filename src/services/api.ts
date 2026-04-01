@@ -3,6 +3,8 @@ import axios, { type AxiosError } from 'axios';
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'https://energolearnapi.akaikumogo.uz/api';
 
+export const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
+
 export type Role = 'SUPERADMIN' | 'MODERATOR' | 'USER';
 
 export type UserProfile = {
@@ -41,6 +43,12 @@ export type MyProgressResponse = {
   completedLevels: number;
   badge: { label: string; bolts: number };
   levels: ProgressLevelItem[];
+  hearts: {
+    heartsCount: number;
+    maxHearts: number;
+    nextRegenAt: string | null;
+    lastHeartRegenAt: string | null;
+  } | null;
 };
 
 export type LevelDetailTheory = {
@@ -82,6 +90,23 @@ export type MobileTheory = {
   title: string;
   content: string;
   orderIndex: number;
+};
+
+export type LeaderboardRow = {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatarUrl: string | null;
+  xp: number;
+  rank: number;
+};
+
+export type LeaderboardResponse = {
+  scope: 'global' | 'organization';
+  orgId: string | null;
+  me: LeaderboardRow | null;
+  top: LeaderboardRow[];
 };
 
 class MobileApiService {
@@ -206,6 +231,17 @@ class MobileApiService {
     return response.data;
   }
 
+  async uploadMyAvatar(file: File): Promise<{ success: boolean; avatarUrl: string }> {
+    const form = new FormData();
+    form.append('file', file);
+    const response = await this.api.post<{ success: boolean; avatarUrl: string }>(
+      '/users/me/avatar',
+      form,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+    return response.data;
+  }
+
   async joinOrganization(organizationId: string): Promise<UserProfile> {
     const response = await this.api.post<UserProfile>('/auth/me/organization', {
       organizationId
@@ -222,6 +258,20 @@ class MobileApiService {
 
   async getMyProgress(): Promise<MyProgressResponse> {
     const response = await this.api.get<MyProgressResponse>('/progress/me');
+    return response.data;
+  }
+
+  async getGlobalLeaderboard(limit = 50): Promise<LeaderboardResponse> {
+    const response = await this.api.get<LeaderboardResponse>('/leaderboard/global', {
+      params: { limit },
+    });
+    return response.data;
+  }
+
+  async getOrganizationLeaderboard(limit = 50): Promise<LeaderboardResponse> {
+    const response = await this.api.get<LeaderboardResponse>('/leaderboard/organization', {
+      params: { limit },
+    });
     return response.data;
   }
 
