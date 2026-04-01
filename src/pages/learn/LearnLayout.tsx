@@ -96,6 +96,20 @@ export default function LearnLayout() {
             {t({ uz: 'QR', en: 'QR', ru: 'QR' })}
           </NavLink>
           <NavLink
+            to="/learn/rating"
+            className={({ isActive }) =>
+              clsx(
+                'flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium',
+                isActive
+                  ? 'text-amber-600 dark:text-amber-400'
+                  : 'text-slate-500 dark:text-slate-400',
+              )
+            }
+          >
+            <Trophy className="h-5 w-5" />
+            {t({ uz: 'Reyting', en: 'Rating', ru: 'Рейтинг' })}
+          </NavLink>
+          <NavLink
             to="/learn/profile"
             className={({ isActive }) =>
               clsx(

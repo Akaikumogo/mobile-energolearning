@@ -11,6 +11,7 @@ import OrganizationSelectPage from '@/pages/OrganizationSelectPage';
 import LearnLayout from '@/pages/learn/LearnLayout';
 import LearnHomePage from '@/pages/learn/LearnHomePage';
 import ProfilePage from '@/pages/learn/ProfilePage';
+import LeaderboardPage from '@/pages/learn/LeaderboardPage';
 import LevelPage from '@/pages/learn/LevelPage';
 import TheoryLessonPage from '@/pages/learn/TheoryLessonPage';
 import QrPage from '@/pages/learn/QrPage';
@@ -28,6 +29,7 @@ export default function App() {
               <Route path="/organization" element={<OrganizationSelectPage />} />
               <Route path="/learn" element={<LearnLayout />}>
                 <Route index element={<LearnHomePage />} />
+                <Route path="rating" element={<LeaderboardPage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="qr" element={<QrPage />} />
                 <Route path="level/:levelId" element={<LevelPage />} />
