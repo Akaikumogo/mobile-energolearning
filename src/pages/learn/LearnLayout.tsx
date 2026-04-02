@@ -34,23 +34,23 @@ export default function LearnLayout() {
   const myGlobalRank = globalRankQuery.data?.me?.rank ?? null;
 
   return (
-    <div className="flex min-h-dvh flex-col bg-slate-50 dark:bg-slate-950">
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
+    <div className="learn-app flex min-h-dvh flex-col bg-slate-50 dark:bg-[var(--learn-bg)]">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/95 dark:backdrop-blur-md">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-[var(--learn-gold)]">
             ElektroLearn
           </p>
           <div className="flex items-center gap-3">
-            <p className="text-sm font-bold text-slate-900 dark:text-white">
+            <p className="text-sm font-bold text-slate-900 dark:text-[var(--learn-gold)]">
               <span className="inline-flex items-center gap-1">
-                <Trophy className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <Trophy className="h-4 w-4 text-amber-600 dark:text-[var(--learn-gold)]" />
                 <span>{xp} XP</span>
               </span>
             </p>
             {typeof myGlobalRank === 'number' ? (
-              <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+              <p className="text-xs font-semibold text-slate-700 dark:text-[var(--learn-gold)]/90">
                 <span className="inline-flex items-center gap-1">
-                  <Crown className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <Crown className="h-4 w-4 text-amber-600 dark:text-[var(--learn-gold)]" />
                   <span>#{myGlobalRank}</span>
                 </span>
               </p>
@@ -64,7 +64,7 @@ export default function LearnLayout() {
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white/95 pb-safe backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
+      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white/95 pb-safe backdrop-blur dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/98 dark:backdrop-blur-md">
         <div className="mx-auto flex max-w-lg">
           <NavLink
             to="/learn"
@@ -73,8 +73,8 @@ export default function LearnLayout() {
               clsx(
                 'flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium',
                 isActive
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : 'text-slate-500 dark:text-slate-400',
+                  ? 'text-amber-600 dark:text-[var(--learn-gold)]'
+                  : 'text-slate-500 dark:text-[var(--learn-muted)]',
               )
             }
           >
@@ -87,8 +87,8 @@ export default function LearnLayout() {
               clsx(
                 'flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium',
                 isActive
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : 'text-slate-500 dark:text-slate-400',
+                  ? 'text-amber-600 dark:text-[var(--learn-gold)]'
+                  : 'text-slate-500 dark:text-[var(--learn-muted)]',
               )
             }
           >
@@ -101,8 +101,8 @@ export default function LearnLayout() {
               clsx(
                 'flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium',
                 isActive
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : 'text-slate-500 dark:text-slate-400',
+                  ? 'text-amber-600 dark:text-[var(--learn-gold)]'
+                  : 'text-slate-500 dark:text-[var(--learn-muted)]',
               )
             }
           >
@@ -115,8 +115,8 @@ export default function LearnLayout() {
               clsx(
                 'flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium',
                 isActive
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : 'text-slate-500 dark:text-slate-400',
+                  ? 'text-amber-600 dark:text-[var(--learn-gold)]'
+                  : 'text-slate-500 dark:text-[var(--learn-muted)]',
               )
             }
           >

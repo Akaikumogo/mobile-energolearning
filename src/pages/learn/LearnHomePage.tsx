@@ -34,9 +34,9 @@ export default function LearnHomePage() {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-6 rounded-3xl border border-amber-200/60 bg-gradient-to-br from-amber-50 to-orange-50 p-5 dark:border-amber-900/40 dark:from-amber-950/40 dark:to-orange-950/30"
+        className="mb-6 rounded-3xl border border-amber-200/60 bg-gradient-to-br from-amber-50 to-orange-50 p-5 dark:border-[var(--learn-border)] dark:from-[var(--learn-card)] dark:to-[var(--learn-surface)]"
       >
-        <p className="text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-200">
+        <p className="text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-[var(--learn-gold)]">
           {t({ uz: 'Unvon', en: 'Badge', ru: 'Значок' })}
         </p>
         <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
@@ -66,10 +66,10 @@ export default function LearnHomePage() {
             {level.isLocked ? (
               <div
                 className={clsx(
-                  'flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-100/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/50',
+                  'flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-100/80 px-4 py-4 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]/40',
                 )}
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-200 dark:bg-slate-800">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-200 dark:bg-[var(--learn-border)]">
                   <Lock className="h-5 w-5 text-slate-500 dark:text-slate-500" />
                 </div>
                 <div className="flex-1">
@@ -88,7 +88,7 @@ export default function LearnHomePage() {
             ) : (
               <Link
                 to={`/learn/level/${level.id}`}
-                className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm transition hover:border-blue-400 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-500"
+                className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm transition hover:border-blue-400 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:hover:border-[var(--learn-blue)]"
               >
                 <div
                   className={clsx(
@@ -104,9 +104,9 @@ export default function LearnHomePage() {
                   <p className="font-semibold text-slate-900 dark:text-white">
                     {level.title}
                   </p>
-                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-[var(--learn-border)]">
                     <div
-                      className="h-full rounded-full bg-amber-500 transition-all"
+                      className="h-full rounded-full bg-amber-500 transition-all dark:bg-[var(--learn-gold)]"
                       style={{ width: `${level.completionPercent}%` }}
                     />
                   </div>

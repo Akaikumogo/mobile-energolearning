@@ -43,7 +43,7 @@ export default function QrPage() {
   return (
     <div className="px-4 py-6">
       <div className="mb-5 flex items-center gap-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]">
           <QrCode className="h-5 w-5 text-slate-800 dark:text-slate-200" />
         </div>
         <h1 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -54,10 +54,10 @@ export default function QrPage() {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+        className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]"
       >
         <div className="mx-auto flex max-w-sm flex-col items-center">
-          <div className="mb-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+          <div className="mb-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]">
             {qrDataUrlQuery.data ? (
               <img src={qrDataUrlQuery.data} alt="QR" className="h-56 w-56" />
             ) : (
@@ -79,8 +79,8 @@ export default function QrPage() {
             className={clsx(
               'mt-4 inline-flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition',
               myId
-                ? 'border-slate-200 bg-slate-50 text-slate-900 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-white dark:hover:bg-slate-800'
-                : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-600',
+                ? 'border-slate-200 bg-slate-50 text-slate-900 hover:bg-slate-100 dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)] dark:text-white dark:hover:bg-[var(--learn-card)]'
+                : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-slate-600',
             )}
           >
             <Copy className="h-4 w-4" />

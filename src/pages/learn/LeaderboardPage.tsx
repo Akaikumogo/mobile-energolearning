@@ -18,7 +18,7 @@ function RowAvatar({ row }: { row: LeaderboardRow }) {
   const initials = useMemo(() => getInitials(row), [row.firstName, row.lastName]);
   const src = row.avatarUrl ? `${BACKEND_ORIGIN}${row.avatarUrl}` : null;
   return (
-    <div className="h-10 w-10 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+    <div className="h-10 w-10 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]">
       {src ? (
         <img src={src} alt="avatar" className="h-full w-full object-cover" />
       ) : (
@@ -49,7 +49,7 @@ function LeaderboardList({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
+      className="rounded-3xl border border-slate-200 bg-white p-5 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]"
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
@@ -79,7 +79,7 @@ function LeaderboardList({
                   'flex items-center gap-3 rounded-2xl border px-3 py-3',
                   isMe
                     ? 'border-amber-200 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/30'
-                    : 'border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-950/30',
+                    : 'border-slate-200 bg-slate-50/60 dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/35',
                 )}
               >
                 <div className="w-10 text-center text-sm font-extrabold text-slate-700 dark:text-slate-200">
@@ -95,10 +95,10 @@ function LeaderboardList({
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-extrabold text-slate-900 dark:text-white">
+                  <p className="text-sm font-extrabold text-slate-900 dark:text-[var(--learn-gold)]">
                     {row.xp}
                   </p>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-[var(--learn-muted)]">
                     XP
                   </p>
                 </div>
@@ -134,7 +134,7 @@ export default function LeaderboardPage() {
   return (
     <div className="px-4 py-6">
       <div className="mb-5 flex items-center gap-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]">
           <Trophy className="h-5 w-5 text-slate-800 dark:text-slate-200" />
         </div>
         <h1 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -150,7 +150,7 @@ export default function LeaderboardPage() {
             'rounded-2xl border px-4 py-3 text-sm font-semibold transition',
             scope === 'global'
               ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-400/50 dark:bg-amber-950/30 dark:text-amber-200'
-              : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800',
+              : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-slate-200 dark:hover:bg-[var(--learn-surface)]',
           )}
         >
           {t({ uz: 'Global', en: 'Global', ru: 'Глобал' })}
@@ -162,7 +162,7 @@ export default function LeaderboardPage() {
             'rounded-2xl border px-4 py-3 text-sm font-semibold transition',
             scope === 'organization'
               ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-400/50 dark:bg-amber-950/30 dark:text-amber-200'
-              : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800',
+              : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-slate-200 dark:hover:bg-[var(--learn-surface)]',
           )}
         >
           {t({ uz: 'Tashkilot', en: 'Organization', ru: 'Организация' })}

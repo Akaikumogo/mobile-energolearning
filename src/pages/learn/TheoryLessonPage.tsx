@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   BadgeCheck,
-  ChevronLeft,
   Heart,
   HeartCrack,
   PartyPopper,
   Home,
+  Sparkles,
   XCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,6 +15,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import mobileApi from '@/services/api';
 import type { MobileQuestion } from '@/services/api';
 import { queryClient } from '@/queryClient';
+import { CheerfulBackLink } from '@/components/CheerfulBackLink';
 import clsx from 'clsx';
 
 export default function TheoryLessonPage() {
@@ -28,6 +29,10 @@ export default function TheoryLessonPage() {
   const [qIndex, setQIndex] = useState(0);
   const [lastXp, setLastXp] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
+  const [pickedOptionId, setPickedOptionId] = useState<string | null>(null);
+  const [revealedCorrectOptionId, setRevealedCorrectOptionId] = useState<
+    string | null
+  >(null);
   const [outOfLives, setOutOfLives] = useState(false);
 
   const progressQuery = useQuery({
@@ -69,8 +74,13 @@ export default function TheoryLessonPage() {
       questionId: string;
       selectedOptionId: string;
     }) => mobileApi.submitAnswer(questionId, selectedOptionId),
-    onSuccess: (res) => {
+    onSuccess: (res, variables) => {
       setFeedback(res.isCorrect ? 'correct' : 'wrong');
+      setPickedOptionId(variables.selectedOptionId);
+      setRevealedCorrectOptionId(
+        res.correctOptionId ??
+          (res.isCorrect ? variables.selectedOptionId : null),
+      );
       setLastXp((x) => x + res.xpEarned);
       if (!res.isCorrect && heartsCount <= 1) {
         setOutOfLives(true);
@@ -88,6 +98,8 @@ export default function TheoryLessonPage() {
 
   const nextQuestion = () => {
     setFeedback(null);
+    setPickedOptionId(null);
+    setRevealedCorrectOptionId(null);
     setOutOfLives(false);
     if (qIndex + 1 >= questions.length) {
       setPhase('done');
@@ -118,51 +130,59 @@ export default function TheoryLessonPage() {
 
   return (
     <div className="px-4 py-4">
-      <Link
-        to={`/learn/level/${levelId}`}
-        className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400"
-      >
-        <ChevronLeft className="h-4 w-4" />
+      <CheerfulBackLink to={`/learn/level/${levelId}`}>
         {t({ uz: 'Level', en: 'Level', ru: 'Уровень' })}
-      </Link>
+      </CheerfulBackLink>
 
       <AnimatePresence mode="wait">
         {phase === 'read' && (
           <motion.div
             key="read"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 28 }}
             exit={{ opacity: 0 }}
           >
-            <h1 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">
+            <h1 className="mb-3 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+              <span className="mr-2 inline-block" aria-hidden>
+                📘
+              </span>
               {theory.title}
             </h1>
             <div
-              className="mb-6 max-w-none space-y-3 text-sm leading-relaxed text-slate-700 dark:text-slate-300 [&_a]:text-blue-600 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5"
+              className="mb-6 max-w-none space-y-3 rounded-3xl border border-slate-200/80 bg-white p-4 text-sm leading-relaxed text-slate-700 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-slate-300 [&_a]:text-blue-600 dark:[&_a]:text-[var(--learn-blue)] [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5"
               dangerouslySetInnerHTML={{ __html: theory.content || '' }}
             />
-            <button
+            <motion.button
               type="button"
+              whileTap={canDoQuiz ? { scale: 0.98 } : undefined}
               onClick={() => {
                 if (!canDoQuiz) return;
                 setPhase('quiz');
               }}
               disabled={!canDoQuiz}
               className={clsx(
-                'w-full rounded-2xl py-4 font-semibold shadow-lg transition',
+                'w-full rounded-2xl py-4 text-base font-bold shadow-lg transition',
                 canDoQuiz
-                  ? 'bg-blue-600 text-white'
-                  : 'cursor-not-allowed bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25 dark:bg-[var(--learn-blue)] dark:shadow-[0_8px_28px_rgba(61,142,255,0.35)]'
+                  : 'cursor-not-allowed bg-slate-200 text-slate-500 dark:bg-[var(--learn-card)] dark:text-[var(--learn-muted)]',
               )}
             >
-              {t({
-                uz: 'Savollarni boshlash',
-                en: 'Start questions',
-                ru: 'Начать вопросы',
-              })}
-            </button>
+              <span className="inline-flex items-center justify-center gap-2">
+                {t({
+                  uz: 'Savollarni boshlash',
+                  en: 'Start questions',
+                  ru: 'Начать вопросы',
+                })}
+                {canDoQuiz ? (
+                  <span className="text-lg leading-none" aria-hidden>
+                    ✨
+                  </span>
+                ) : null}
+              </span>
+            </motion.button>
             {!canDoQuiz && (
-              <p className="mt-3 text-center text-sm text-rose-600 dark:text-rose-400">
+              <p className="mt-3 text-center text-sm text-rose-600 dark:text-[var(--learn-red)]">
                 {t({
                   uz: 'Jon tugagan. Savollar ishlash uchun ertaga qayta urinib ko‘ring.',
                   en: 'No lives left. Try again tomorrow.',
@@ -192,69 +212,164 @@ export default function TheoryLessonPage() {
         {phase === 'quiz' && question && (
           <motion.div
             key={question.id}
-            initial={{ opacity: 0, x: 12 }}
+            initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
             className="pb-8"
           >
-            <div className="mb-4 flex items-center justify-between text-sm">
-              <span className="text-slate-500">
-                {qIndex + 1}/{questions.length}
+            <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-slate-50 p-3 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-extrabold tabular-nums text-blue-700 shadow-sm dark:bg-[var(--learn-card)] dark:text-[var(--learn-gold)] dark:shadow-none">
+                <Sparkles className="h-3.5 w-3.5 text-amber-500 dark:text-[var(--learn-gold)]" />
+                {qIndex + 1} / {questions.length}
               </span>
-              <span className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
-                <span>{t({ uz: 'Jon', en: 'Lives', ru: 'Жизни' })}:</span>
-                <span className="inline-flex items-center gap-1">
-                  {Array.from({ length: heartsUi.cnt }).map((_, i) => (
-                    <Heart key={`h-${i}`} className="h-4 w-4 fill-current" />
-                  ))}
-                  {Array.from({ length: heartsUi.empty }).map((_, i) => (
-                    <HeartCrack
-                      key={`e-${i}`}
-                      className="h-4 w-4 opacity-60"
-                    />
-                  ))}
-                </span>
+              <span
+                className="inline-flex items-center gap-1 rounded-full border-2 border-rose-200/80 bg-rose-50 px-2.5 py-1.5 shadow-sm dark:border-[var(--learn-red)]/45 dark:bg-[#2d1218]/70 dark:shadow-[0_0_16px_rgba(255,71,87,0.12)]"
+                title={t({
+                  uz: 'Qolgan urinishlar',
+                  en: 'Attempts left',
+                  ru: 'Осталось попыток',
+                })}
+              >
+                {Array.from({ length: heartsUi.cnt }).map((_, i) => (
+                  <Heart
+                    key={`h-${i}`}
+                    className="h-4 w-4 fill-current text-rose-500 dark:text-[var(--learn-red)]"
+                  />
+                ))}
+                {Array.from({ length: heartsUi.empty }).map((_, i) => (
+                  <HeartCrack
+                    key={`e-${i}`}
+                    className="h-4 w-4 text-slate-400 opacity-70 dark:text-[var(--learn-muted)]"
+                  />
+                ))}
               </span>
             </div>
 
-            <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">
-              {question.prompt}
-            </h2>
+            <div className="relative mb-4 overflow-hidden rounded-3xl border-2 border-blue-200/80 bg-white p-4 shadow-md dark:border-[var(--learn-blue)]/35 dark:bg-[var(--learn-card)] dark:shadow-[0_0_40px_rgba(61,142,255,0.14)]">
+              <div
+                className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-blue-400/20 blur-2xl dark:bg-[var(--learn-blue)]/20"
+                aria-hidden
+              />
+              <div className="relative">
+                <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-blue-600/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-blue-800 dark:bg-[var(--learn-blue)]/20 dark:text-[var(--learn-blue)]">
+                  <Sparkles className="h-3 w-3" />
+                  {t({ uz: 'Savol', en: 'Question', ru: 'Вопрос' })}
+                </span>
+                <h2 className="text-lg font-extrabold leading-snug text-slate-900 dark:text-white">
+                  {question.prompt}
+                </h2>
+              </div>
+            </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               {[...question.options]
                 .sort((a, b) => a.orderIndex - b.orderIndex)
-                .map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    disabled={!!feedback || answerMut.isPending || !canDoQuiz}
-                    onClick={() => onPickOption(opt.id)}
-                    className={clsx(
-                      'rounded-2xl border px-4 py-4 text-left font-medium transition',
-                      'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900',
-                      feedback && 'opacity-80',
-                      !canDoQuiz && 'opacity-60',
-                    )}
-                  >
-                    {opt.optionText}
-                    {opt.matchText ? (
-                      <span className="mt-1 block text-xs text-slate-500">
-                        {opt.matchText}
+                .map((opt, oi) => {
+                  const letter = String.fromCharCode(65 + oi);
+                  const pickable =
+                    !feedback && !answerMut.isPending && canDoQuiz;
+                  const showResult = Boolean(feedback);
+                  const isWrongPick =
+                    showResult &&
+                    feedback === 'wrong' &&
+                    pickedOptionId === opt.id;
+                  const isCorrectReveal =
+                    showResult &&
+                    revealedCorrectOptionId != null &&
+                    revealedCorrectOptionId === opt.id;
+                  const isOtherAfterResult =
+                    showResult && !isWrongPick && !isCorrectReveal;
+
+                  return (
+                    <motion.button
+                      key={opt.id}
+                      type="button"
+                      disabled={!pickable}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        delay: oi * 0.07,
+                        type: 'spring',
+                        stiffness: 380,
+                        damping: 26,
+                      }}
+                      whileTap={pickable ? { scale: 0.98 } : undefined}
+                      onClick={() => onPickOption(opt.id)}
+                      className={clsx(
+                        'flex items-start gap-3 rounded-2xl border-2 px-3 py-3.5 text-left shadow-sm transition',
+                        !isWrongPick &&
+                          !isCorrectReveal &&
+                          'border-slate-200/90 bg-white dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]',
+                        pickable &&
+                          'hover:border-blue-400 hover:bg-sky-50/80 hover:shadow-md dark:hover:border-[var(--learn-blue)] dark:hover:bg-[#1e3a5f]/40 dark:hover:shadow-[0_0_20px_rgba(61,142,255,0.15)]',
+                        isWrongPick &&
+                          'border-rose-500 bg-rose-50 shadow-md dark:border-[var(--learn-red)] dark:bg-[#3d151a]/90',
+                        isCorrectReveal &&
+                          'border-emerald-500 bg-emerald-50 shadow-md dark:border-[var(--learn-green)] dark:bg-[#0d241c]',
+                        isOtherAfterResult && 'opacity-55',
+                        !canDoQuiz && !showResult && 'opacity-60',
+                      )}
+                    >
+                      <span
+                        className={clsx(
+                          'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 text-sm font-black text-white shadow-md',
+                          isWrongPick &&
+                            'border-rose-600 bg-rose-600 ring-2 ring-rose-300/40 dark:border-[var(--learn-red)] dark:bg-[var(--learn-red)] dark:ring-rose-400/25',
+                          isCorrectReveal &&
+                            'border-emerald-600 bg-emerald-600 ring-2 ring-emerald-300/40 dark:border-[var(--learn-green)] dark:bg-[var(--learn-green)] dark:ring-emerald-400/25',
+                          !isWrongPick &&
+                            !isCorrectReveal &&
+                            'border-blue-500/50 bg-blue-600 ring-2 ring-blue-400/25 dark:border-[var(--learn-blue)] dark:bg-[var(--learn-blue)] dark:ring-blue-400/20',
+                          isOtherAfterResult &&
+                            'border-slate-300 bg-slate-400 text-white ring-0 dark:border-slate-600 dark:bg-slate-600',
+                        )}
+                      >
+                        {letter}
                       </span>
-                    ) : null}
-                  </button>
-                ))}
+                      <span
+                        className={clsx(
+                          'min-w-0 flex-1 pt-0.5 text-base font-bold',
+                          isWrongPick &&
+                            'text-rose-900 dark:text-rose-100',
+                          isCorrectReveal &&
+                            'text-emerald-900 dark:text-emerald-100',
+                          !isWrongPick &&
+                            !isCorrectReveal &&
+                            'text-slate-800 dark:text-slate-100',
+                        )}
+                      >
+                        {opt.optionText}
+                        {opt.matchText ? (
+                          <span
+                            className={clsx(
+                              'mt-1 block text-xs font-medium',
+                              isWrongPick && 'text-rose-800/90 dark:text-rose-200/80',
+                              isCorrectReveal &&
+                                'text-emerald-800/90 dark:text-emerald-200/80',
+                              !isWrongPick &&
+                                !isCorrectReveal &&
+                                'text-slate-500 dark:text-slate-400',
+                            )}
+                          >
+                            {opt.matchText}
+                          </span>
+                        ) : null}
+                      </span>
+                    </motion.button>
+                  );
+                })}
             </div>
 
             {feedback && (
               <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 24 }}
                 className={clsx(
-                  'mt-4 rounded-2xl border px-4 py-3',
+                  'mt-4 rounded-2xl border-2 px-4 py-3 shadow-lg',
                   feedback === 'correct'
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-100'
-                    : 'border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-100',
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-[var(--learn-green)]/45 dark:bg-[#0d241c] dark:text-emerald-100'
+                    : 'border-rose-200 bg-rose-50 text-rose-900 dark:border-[var(--learn-red)]/45 dark:bg-[#2d1218] dark:text-rose-100',
                 )}
               >
                 <div className="flex items-center gap-2">
@@ -269,8 +384,9 @@ export default function TheoryLessonPage() {
                       : t({ uz: 'Noto‘g‘ri', en: 'Wrong', ru: 'Неверно' })}
                   </p>
                 </div>
-                <button
+                <motion.button
                   type="button"
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => {
                     if (feedback === 'wrong' && outOfLives) {
                       navigate('/learn', { replace: true });
@@ -279,16 +395,16 @@ export default function TheoryLessonPage() {
                     nextQuestion();
                   }}
                   className={clsx(
-                    'mt-3 w-full rounded-xl py-3 font-semibold',
+                    'mt-3 w-full rounded-2xl py-3.5 text-base font-bold shadow-md',
                     feedback === 'correct'
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-rose-600 text-white',
+                      ? 'bg-emerald-600 text-white dark:bg-[var(--learn-green)] dark:shadow-[0_6px_20px_rgba(0,200,150,0.25)]'
+                      : 'bg-rose-600 text-white dark:bg-[var(--learn-red)] dark:shadow-[0_6px_20px_rgba(255,71,87,0.25)]',
                   )}
                 >
                   {feedback === 'wrong' && outOfLives
                     ? t({ uz: 'Bosh menyu', en: 'Main menu', ru: 'Главное меню' })
                     : t({ uz: 'Keyingisi', en: 'Next', ru: 'Далее' })}
-                </button>
+                </motion.button>
                 {feedback === 'wrong' && outOfLives ? (
                   <div className="mt-3 flex items-center justify-center gap-2 text-sm text-rose-700/80 dark:text-rose-200/80">
                     <Home className="h-4 w-4" />
@@ -309,25 +425,23 @@ export default function TheoryLessonPage() {
         {phase === 'done' && (
           <motion.div
             key="done"
-            initial={{ opacity: 0, scale: 0.96 }}
+            initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 22 }}
             className="flex flex-col items-center py-10 text-center"
           >
-            <div className="mb-4 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
-              <PartyPopper className="h-8 w-8" />
+            <div className="mb-4 rounded-3xl border-2 border-amber-300/80 bg-amber-50 p-5 text-amber-700 shadow-md dark:border-[var(--learn-gold)]/40 dark:bg-amber-950/35 dark:text-amber-200">
+              <PartyPopper className="mx-auto h-10 w-10" />
             </div>
             <h2 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">
               {t({ uz: 'Yakunlandi!', en: 'Completed!', ru: 'Готово!' })}
             </h2>
-            <p className="mb-6 text-amber-600 dark:text-amber-400">
+            <p className="mb-6 text-amber-600 dark:text-[var(--learn-gold)]">
               +{lastXp} XP
             </p>
-            <Link
-              to={`/learn/level/${levelId}`}
-              className="rounded-2xl bg-blue-600 px-8 py-3 font-semibold text-white"
-            >
+            <CheerfulBackLink to={`/learn/level/${levelId}`} variant="cta">
               {t({ uz: 'Levelga qaytish', en: 'Back to level', ru: 'К уровню' })}
-            </Link>
+            </CheerfulBackLink>
           </motion.div>
         )}
       </AnimatePresence>

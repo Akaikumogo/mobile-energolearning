@@ -1,9 +1,10 @@
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, BookOpen } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
 import mobileApi from '@/services/api';
+import { CheerfulBackLink } from '@/components/CheerfulBackLink';
 import clsx from 'clsx';
 
 export default function LevelPage() {
@@ -29,13 +30,9 @@ export default function LevelPage() {
   if (isError || !data) {
     return (
       <div className="p-6">
-        <Link
-          to="/learn"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400"
-        >
-          <ChevronLeft className="h-4 w-4" />
+        <CheerfulBackLink to="/learn">
           {t({ uz: 'Orqaga', en: 'Back', ru: 'Назад' })}
-        </Link>
+        </CheerfulBackLink>
         <p className="text-red-600">
           {t({
             uz: 'Level ochilmadi',
@@ -53,13 +50,9 @@ export default function LevelPage() {
 
   return (
     <div className="px-4 py-4">
-      <Link
-        to="/learn"
-        className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400"
-      >
-        <ChevronLeft className="h-4 w-4" />
+      <CheerfulBackLink to="/learn">
         {t({ uz: 'Bosh sahifa', en: 'Home', ru: 'Главная' })}
-      </Link>
+      </CheerfulBackLink>
 
       <h1 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">
         {data.title}
@@ -91,12 +84,14 @@ export default function LevelPage() {
             >
               <Link
                 to={`/learn/level/${levelId}/theory/${th.id}`}
-                className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-amber-400 dark:border-slate-700 dark:bg-slate-900"
+                className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-amber-400 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:hover:border-[var(--learn-gold)]/70"
               >
                 <div
                   className={clsx(
                     'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white',
-                    done ? 'bg-emerald-500' : 'bg-slate-700 dark:bg-slate-600',
+                    done
+                      ? 'bg-emerald-500 dark:bg-[var(--learn-green)]'
+                      : 'bg-slate-700 dark:bg-[var(--learn-border)]',
                   )}
                 >
                   <BookOpen className="h-5 w-5" />
@@ -109,9 +104,9 @@ export default function LevelPage() {
                     {th.answeredQuestions}/{th.totalQuestions}{' '}
                     {t({ uz: 'savol', en: 'questions', ru: 'вопросов' })}
                   </p>
-                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-[var(--learn-border)]">
                     <div
-                      className="h-full rounded-full bg-amber-500"
+                      className="h-full rounded-full bg-amber-500 dark:bg-[var(--learn-gold)]"
                       style={{ width: `${pct}%` }}
                     />
                   </div>

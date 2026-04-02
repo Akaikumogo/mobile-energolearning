@@ -88,7 +88,7 @@ export default function ProfilePage() {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+        className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]"
       >
         <p className="text-xs font-semibold uppercase text-slate-500">
           {t({ uz: 'Foydalanuvchi', en: 'User', ru: 'Пользователь' })}
@@ -98,7 +98,7 @@ export default function ProfilePage() {
             type="button"
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
-            className="group relative h-16 w-16 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-800 dark:bg-slate-950"
+            className="group relative h-16 w-16 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]"
             title={t({ uz: 'Avatarni o‘zgartirish', en: 'Change avatar', ru: 'Сменить аватар' })}
           >
             {avatarSrc ? (
@@ -138,7 +138,7 @@ export default function ProfilePage() {
         ) : null}
       </motion.div>
 
-      <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+      <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
             <Languages className="h-5 w-5 text-slate-500 dark:text-slate-300" />
@@ -147,7 +147,7 @@ export default function ProfilePage() {
           <button
             type="button"
             onClick={() => setTheme(isDark ? 'light' : 'dark')}
-            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)] dark:text-white"
             title={t({ uz: 'Tema', en: 'Theme', ru: 'Тема' })}
           >
             {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -172,7 +172,7 @@ export default function ProfilePage() {
                 'rounded-2xl border px-4 py-3 text-sm font-semibold transition',
                 lang === item.id
                   ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-400/50 dark:bg-amber-950/30 dark:text-amber-200'
-                  : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800',
+                  : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-slate-200 dark:hover:bg-[var(--learn-surface)]',
               )}
             >
               {item.label}
@@ -181,21 +181,21 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="mb-6 rounded-3xl border border-amber-200/60 bg-amber-50/80 p-5 dark:border-amber-900/40 dark:bg-amber-950/30">
-        <p className="text-sm text-amber-900 dark:text-amber-200">
+      <div className="mb-6 rounded-3xl border border-amber-200/60 bg-amber-50/80 p-5 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]">
+        <p className="text-sm text-amber-900 dark:text-[var(--learn-gold)]/90">
           {progress?.badge.label ?? '—'}
         </p>
-        <p className="text-2xl font-bold text-slate-900 dark:text-white">
+        <p className="text-2xl font-bold text-slate-900 dark:text-[var(--learn-gold)]">
           {progress?.totalXp ?? 0} XP
         </p>
         <div className="mt-4 grid grid-cols-2 gap-3">
           <div className="rounded-2xl border border-amber-200/60 bg-white/70 p-3 dark:border-amber-900/30 dark:bg-black/20">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
-              <Trophy className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <Trophy className="h-4 w-4 text-amber-600 dark:text-[var(--learn-gold)]" />
               <span>{t({ uz: 'Global', en: 'Global', ru: 'Глобал' })}</span>
             </div>
             <div className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
-              <Crown className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <Crown className="h-4 w-4 text-amber-600 dark:text-[var(--learn-gold)]" />
               <span>
                 {globalRankQuery.data?.me?.rank
                   ? `#${globalRankQuery.data.me.rank}`
@@ -205,11 +205,11 @@ export default function ProfilePage() {
           </div>
           <div className="rounded-2xl border border-amber-200/60 bg-white/70 p-3 dark:border-amber-900/30 dark:bg-black/20">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
-              <Users className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <Users className="h-4 w-4 text-amber-600 dark:text-[var(--learn-gold)]" />
               <span>{t({ uz: 'Tashkilot', en: 'Org', ru: 'Орг' })}</span>
             </div>
             <div className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
-              <Crown className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <Crown className="h-4 w-4 text-amber-600 dark:text-[var(--learn-gold)]" />
               <span>
                 {orgRankQuery.data?.me?.rank ? `#${orgRankQuery.data.me.rank}` : '—'}
               </span>

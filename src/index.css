@@ -9,6 +9,19 @@
   --color-brand-to: #0a36ad;
 }
 
+/* ElektroLearn-style dark HUD: only under .learn-app + .dark (LearnLayout root) */
+.dark .learn-app {
+  --learn-bg: #050a14;
+  --learn-surface: #0d1825;
+  --learn-card: #152034;
+  --learn-border: #1e2f4a;
+  --learn-muted: #6b7fa3;
+  --learn-gold: #ffd700;
+  --learn-blue: #3d8eff;
+  --learn-red: #ff4757;
+  --learn-green: #00c896;
+}
+
 html {
   -webkit-tap-highlight-color: transparent;
 }
