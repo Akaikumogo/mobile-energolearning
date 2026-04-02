@@ -1,7 +1,7 @@
 import axios, { type AxiosError } from 'axios';
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'https://energolearnapi.akaikumogo.uz/api';
+  import.meta.env.VITE_API_URL || 'https://elektrolearn.uzbekistonmet.uz/api';
 
 export const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
 
