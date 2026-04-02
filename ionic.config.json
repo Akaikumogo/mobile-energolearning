@@ -1,0 +1,8 @@
+{
+  "name": "ElektroLearn",
+  "type": "react-vite",
+  "integrations": {
+    "capacitor": {}
+  }
+}
+
