@@ -1,7 +1,8 @@
 import axios, { type AxiosError } from 'axios';
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'https://elektrolearn.uzbekistonmet.uz/api';
+  import.meta.env.VITE_API_URL ||
+  'https://elektrolearn-api.uzbekistonmet.uz/api';
 
 export const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
 
@@ -231,14 +232,17 @@ class MobileApiService {
     return response.data;
   }
 
-  async uploadMyAvatar(file: File): Promise<{ success: boolean; avatarUrl: string }> {
+  async uploadMyAvatar(
+    file: File
+  ): Promise<{ success: boolean; avatarUrl: string }> {
     const form = new FormData();
     form.append('file', file);
-    const response = await this.api.post<{ success: boolean; avatarUrl: string }>(
-      '/users/me/avatar',
-      form,
-      { headers: { 'Content-Type': 'multipart/form-data' } },
-    );
+    const response = await this.api.post<{
+      success: boolean;
+      avatarUrl: string;
+    }>('/users/me/avatar', form, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   }
 
@@ -262,16 +266,22 @@ class MobileApiService {
   }
 
   async getGlobalLeaderboard(limit = 50): Promise<LeaderboardResponse> {
-    const response = await this.api.get<LeaderboardResponse>('/leaderboard/global', {
-      params: { limit },
-    });
+    const response = await this.api.get<LeaderboardResponse>(
+      '/leaderboard/global',
+      {
+        params: { limit }
+      }
+    );
     return response.data;
   }
 
   async getOrganizationLeaderboard(limit = 50): Promise<LeaderboardResponse> {
-    const response = await this.api.get<LeaderboardResponse>('/leaderboard/organization', {
-      params: { limit },
-    });
+    const response = await this.api.get<LeaderboardResponse>(
+      '/leaderboard/organization',
+      {
+        params: { limit }
+      }
+    );
     return response.data;
   }
 
