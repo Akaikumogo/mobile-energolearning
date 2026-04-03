@@ -5,6 +5,10 @@ const config: CapacitorConfig = {
   appName: 'ElektroLearn',
   webDir: 'dist',
   bundledWebRuntime: false,
+  /** Android 15+ (API 35): edge-to-edge; WebView gets system bar / cutout margins. */
+  android: {
+    adjustMarginsForEdgeToEdge: 'auto',
+  },
 };
 
 export default config;

@@ -55,7 +55,7 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-dvh bg-gradient-to-br from-[#2563EB] to-[#0a36ad] dark:from-slate-950 dark:to-slate-900">
-      <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
+      <div className="absolute z-10 flex items-center gap-2 [right:max(1rem,env(safe-area-inset-right,0px))] [top:max(1rem,env(safe-area-inset-top,0px))]">
         <select
           value={lang}
           onChange={(e) => setLang(e.target.value as typeof lang)}
@@ -70,7 +70,7 @@ export default function LoginPage() {
       </div>
 
       <motion.div
-        className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 pb-safe pt-16"
+        className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-safe-6 pb-safe pt-safe-16"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
       >

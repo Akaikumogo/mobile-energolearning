@@ -30,6 +30,44 @@ body {
   @apply min-h-dvh antialiased bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
 }
 
+/* Safe areas: pairs with viewport-fit=cover; on Capacitor Android 15+ also complements native WebView insets */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pl-safe {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+.pr-safe {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+.px-safe-insets {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* 1rem base horizontal padding, never less than cutout / gesture inset */
+.px-safe-4 {
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+}
+
+.px-safe-5 {
+  padding-left: max(1.25rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.25rem, env(safe-area-inset-right, 0px));
+}
+
+.px-safe-6 {
+  padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+}
+
+/* Former pt-14 / pt-16 + status bar / Dynamic Island */
+.pt-safe-14 {
+  padding-top: max(3.5rem, env(safe-area-inset-top, 0px));
+}
+.pt-safe-16 {
+  padding-top: max(4rem, env(safe-area-inset-top, 0px));
 }

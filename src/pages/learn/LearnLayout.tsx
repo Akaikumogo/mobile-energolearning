@@ -35,7 +35,7 @@ export default function LearnLayout() {
 
   return (
     <div className="learn-app flex min-h-dvh flex-col bg-slate-50 dark:bg-[var(--learn-bg)]">
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/95 dark:backdrop-blur-md">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/90 px-safe-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] backdrop-blur dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/95 dark:backdrop-blur-md">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-[var(--learn-gold)]">
             ElektroLearn
@@ -64,7 +64,7 @@ export default function LearnLayout() {
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white/95 pb-safe backdrop-blur dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/98 dark:backdrop-blur-md">
+      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white/95 px-safe-4 pb-safe backdrop-blur dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/98 dark:backdrop-blur-md">
         <div className="mx-auto flex max-w-lg">
           <NavLink
             to="/learn"

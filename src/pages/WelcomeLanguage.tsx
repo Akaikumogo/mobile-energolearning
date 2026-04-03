@@ -26,12 +26,12 @@ export default function WelcomeLanguage() {
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-gradient-to-br from-[#2563EB] to-[#0a36ad] dark:from-slate-950 dark:to-slate-900">
-      <div className="absolute right-4 top-4 z-10 flex gap-2">
+      <div className="absolute z-10 flex gap-2 [right:max(1rem,env(safe-area-inset-right,0px))] [top:max(1rem,env(safe-area-inset-top,0px))]">
         <ThemeToggle className="border-white/20 bg-white/10 text-white" />
       </div>
 
       <motion.div
-        className="flex min-h-dvh flex-col items-center justify-center px-6 pb-safe pt-14"
+        className="flex min-h-dvh flex-col items-center justify-center px-safe-6 pb-safe pt-safe-14"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}

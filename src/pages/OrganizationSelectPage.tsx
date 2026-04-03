@@ -41,8 +41,8 @@ export default function OrganizationSelectPage() {
 
   if (cached.role !== 'USER') {
     return (
-      <div className="min-h-dvh bg-slate-50 p-6 dark:bg-slate-950">
-        <p className="mt-20 text-center text-slate-600 dark:text-slate-400">
+      <div className="min-h-dvh bg-slate-50 px-safe-6 pb-safe pt-safe-16 dark:bg-slate-950">
+        <p className="mt-12 text-center text-slate-600 dark:text-slate-400">
           {t({
             uz: 'Bu qadam faqat o‘quvchilar uchun.',
             en: 'This step is for learners only.',
@@ -62,7 +62,7 @@ export default function OrganizationSelectPage() {
 
   return (
     <div className="relative min-h-dvh bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-950 dark:to-slate-900">
-      <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
+      <div className="absolute z-10 flex items-center gap-2 [right:max(1rem,env(safe-area-inset-right,0px))] [top:max(1rem,env(safe-area-inset-top,0px))]">
         <select
           value={lang}
           onChange={(e) => setLang(e.target.value as typeof lang)}
@@ -77,7 +77,7 @@ export default function OrganizationSelectPage() {
       </div>
 
       <motion.div
-        className="mx-auto flex min-h-dvh max-w-lg flex-col px-5 pb-safe pt-16"
+        className="mx-auto flex min-h-dvh max-w-lg flex-col px-safe-5 pb-safe pt-safe-16"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
       >
