@@ -1,5 +1,5 @@
 import { Navigate, Outlet, NavLink } from 'react-router-dom';
-import { Crown, Home, QrCode, Trophy, User } from 'lucide-react';
+import { ClipboardList, Crown, Home, QrCode, Trophy, User } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from '@/hooks/useTranslation';
 import mobileApi from '@/services/api';
@@ -67,60 +67,74 @@ export default function LearnLayout() {
       <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white/95 px-safe-4 pb-safe backdrop-blur dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/98 dark:backdrop-blur-md">
         <div className="mx-auto flex max-w-lg">
           <NavLink
-            to="/learn"
-            end
+            to="/learn/exam"
             className={({ isActive }) =>
               clsx(
-                'flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium',
+                'flex min-w-0 flex-1 flex-col items-center gap-1 py-3 text-[10px] font-medium sm:text-xs',
                 isActive
                   ? 'text-amber-600 dark:text-[var(--learn-gold)]'
                   : 'text-slate-500 dark:text-[var(--learn-muted)]',
               )
             }
           >
-            <Home className="h-5 w-5" />
+            <ClipboardList className="h-5 w-5 shrink-0" />
+            {t({ uz: 'Imtihon', en: 'Exam', ru: 'Экзамен' })}
+          </NavLink>
+          <NavLink
+            to="/learn"
+            end
+            className={({ isActive }) =>
+              clsx(
+                'flex min-w-0 flex-1 flex-col items-center gap-1 py-3 text-[10px] font-medium sm:text-xs',
+                isActive
+                  ? 'text-amber-600 dark:text-[var(--learn-gold)]'
+                  : 'text-slate-500 dark:text-[var(--learn-muted)]',
+              )
+            }
+          >
+            <Home className="h-5 w-5 shrink-0" />
             {t({ uz: 'Bosh sahifa', en: 'Home', ru: 'Главная' })}
           </NavLink>
           <NavLink
             to="/learn/qr"
             className={({ isActive }) =>
               clsx(
-                'flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium',
+                'flex min-w-0 flex-1 flex-col items-center gap-1 py-3 text-[10px] font-medium sm:text-xs',
                 isActive
                   ? 'text-amber-600 dark:text-[var(--learn-gold)]'
                   : 'text-slate-500 dark:text-[var(--learn-muted)]',
               )
             }
           >
-            <QrCode className="h-5 w-5" />
+            <QrCode className="h-5 w-5 shrink-0" />
             {t({ uz: 'QR', en: 'QR', ru: 'QR' })}
           </NavLink>
           <NavLink
             to="/learn/rating"
             className={({ isActive }) =>
               clsx(
-                'flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium',
+                'flex min-w-0 flex-1 flex-col items-center gap-1 py-3 text-[10px] font-medium sm:text-xs',
                 isActive
                   ? 'text-amber-600 dark:text-[var(--learn-gold)]'
                   : 'text-slate-500 dark:text-[var(--learn-muted)]',
               )
             }
           >
-            <Trophy className="h-5 w-5" />
+            <Trophy className="h-5 w-5 shrink-0" />
             {t({ uz: 'Reyting', en: 'Rating', ru: 'Рейтинг' })}
           </NavLink>
           <NavLink
             to="/learn/profile"
             className={({ isActive }) =>
               clsx(
-                'flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium',
+                'flex min-w-0 flex-1 flex-col items-center gap-1 py-3 text-[10px] font-medium sm:text-xs',
                 isActive
                   ? 'text-amber-600 dark:text-[var(--learn-gold)]'
                   : 'text-slate-500 dark:text-[var(--learn-muted)]',
               )
             }
           >
-            <User className="h-5 w-5" />
+            <User className="h-5 w-5 shrink-0" />
             {t({ uz: 'Profil', en: 'Profile', ru: 'Профиль' })}
           </NavLink>
         </div>

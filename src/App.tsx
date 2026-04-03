@@ -15,6 +15,7 @@ import LeaderboardPage from '@/pages/learn/LeaderboardPage';
 import LevelPage from '@/pages/learn/LevelPage';
 import TheoryLessonPage from '@/pages/learn/TheoryLessonPage';
 import QrPage from '@/pages/learn/QrPage';
+import ExamLivePage from '@/pages/learn/ExamLivePage';
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
                 <Route path="rating" element={<LeaderboardPage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="qr" element={<QrPage />} />
+                <Route path="exam" element={<ExamLivePage />} />
                 <Route path="level/:levelId" element={<LevelPage />} />
                 <Route
                   path="level/:levelId/theory/:theoryId"

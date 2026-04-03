@@ -6,6 +6,59 @@ const API_BASE_URL =
 
 export const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
 
+export function getExamLiveSocketUrl(): string {
+  return BACKEND_ORIGIN;
+}
+
+export type ExamQuestionSection = 'PT' | 'TB';
+
+export type ExamSessionState = {
+  status: string;
+  includesPt: boolean;
+  includesTb: boolean;
+  ptCompleted: boolean;
+  tbCompleted: boolean;
+  activeSection: ExamQuestionSection | null;
+  rejectionReason: string | null;
+  attemptId: string | null;
+  ptScorePercent: number | null;
+  tbScorePercent: number | null;
+  oralPending: boolean;
+};
+
+export type ExamLiveQuestion = {
+  orderIndex: number;
+  id: string;
+  prompt: string;
+  type: string;
+  options: Array<{ id: string; optionText: string; orderIndex: number }>;
+};
+
+export type ExamHistoryRow = {
+  id: string;
+  createdAt: string;
+  examTitle: string | null;
+  examType: string | null;
+  extraReason: string | null;
+  includesPt: boolean;
+  includesTb: boolean;
+  ptScorePercent: number | null;
+  tbScorePercent: number | null;
+  scorePercent: number | null;
+  oralResult: string | null;
+  oralFeedback: string | null;
+  finalizedAt: string | null;
+};
+
+export type ExamNextResponse = {
+  next: {
+    assignmentId: string;
+    suggestedAt: string;
+    scheduledAt: string | null;
+    daysLeft: number;
+  } | null;
+};
+
 export type Role = 'SUPERADMIN' | 'MODERATOR' | 'USER';
 
 export type UserProfile = {
@@ -310,6 +363,98 @@ class MobileApiService {
       correctOptionId: string | null;
       xpEarned: number;
     }>('/progress/answer', { questionId, selectedOptionId });
+    return response.data;
+  }
+
+  async validateExamQr(qrToken: string): Promise<{
+    sessionId: string;
+    assignmentId: string;
+    status: string;
+    includesPt: boolean;
+    includesTb: boolean;
+    examTitle: string | null;
+  }> {
+    const response = await this.api.post('/exams/live/validate-qr', { qrToken });
+    const d = response.data as { error?: string };
+    if (d && typeof d === 'object' && 'error' in d && d.error) {
+      throw new Error(d.error);
+    }
+    return response.data as {
+      sessionId: string;
+      assignmentId: string;
+      status: string;
+      includesPt: boolean;
+      includesTb: boolean;
+      examTitle: string | null;
+    };
+  }
+
+  async getExamSessionState(sessionId: string): Promise<ExamSessionState> {
+    const response = await this.api.get<ExamSessionState>(`/exams/live/session/${sessionId}/state`);
+    return response.data;
+  }
+
+  async verifyExamCode(sessionId: string, code: string): Promise<{ attemptId: string }> {
+    const response = await this.api.post(`/exams/live/session/${sessionId}/verify-code`, { code });
+    return response.data;
+  }
+
+  async startExamSection(
+    sessionId: string,
+    section: ExamQuestionSection,
+  ): Promise<{
+    section: ExamQuestionSection;
+    questions: ExamLiveQuestion[];
+    durationMinutes: number;
+    pointsPerQuestion: number;
+  }> {
+    const response = await this.api.post(`/exams/live/session/${sessionId}/start-section`, {
+      section,
+    });
+    return response.data;
+  }
+
+  async saveExamAnswer(
+    sessionId: string,
+    section: ExamQuestionSection,
+    questionId: string,
+    selectedOptionId: string,
+  ): Promise<{ ok: boolean }> {
+    const response = await this.api.post(`/exams/live/session/${sessionId}/answer`, {
+      section,
+      questionId,
+      selectedOptionId,
+    });
+    return response.data;
+  }
+
+  async submitExamSection(
+    sessionId: string,
+    section: ExamQuestionSection,
+  ): Promise<{
+    awaitingOral: boolean;
+    percent: number;
+    passed: boolean;
+    passThreshold: number;
+  }> {
+    const response = await this.api.post(`/exams/live/session/${sessionId}/submit-section`, {
+      section,
+    });
+    return response.data;
+  }
+
+  async recordExamTabSwitch(sessionId: string): Promise<{ tabSwitchCount: number; cancelled: boolean }> {
+    const response = await this.api.post(`/exams/live/session/${sessionId}/tab-switch`);
+    return response.data;
+  }
+
+  async getExamHistory(): Promise<ExamHistoryRow[]> {
+    const response = await this.api.get<ExamHistoryRow[]>('/exams/live/me/history');
+    return response.data;
+  }
+
+  async getExamNext(): Promise<ExamNextResponse> {
+    const response = await this.api.get<ExamNextResponse>('/exams/live/me/next');
     return response.data;
   }
 }

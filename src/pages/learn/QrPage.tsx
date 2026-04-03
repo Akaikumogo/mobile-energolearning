@@ -50,6 +50,13 @@ export default function QrPage() {
           {t({ uz: 'QR kod', en: 'QR code', ru: 'QR код' })}
         </h1>
       </div>
+      <p className="mb-4 text-center text-xs text-slate-500 dark:text-slate-400">
+        {t({
+          uz: 'Imtihon uchun alohida: pastki menyu → «Imtihon».',
+          en: 'For exams use the bottom tab «Exam».',
+          ru: 'Для экзамена: вкладка «Экзамен».',
+        })}
+      </p>
 
       <motion.div
         initial={{ opacity: 0, y: 8 }}
