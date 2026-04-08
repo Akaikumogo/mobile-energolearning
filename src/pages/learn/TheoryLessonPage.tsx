@@ -13,7 +13,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
 import mobileApi from '@/services/api';
-import type { MobileNazariyaSection, MobileQuestion } from '@/services/api';
+import type { MobileNazariyaSection, MobileQuestion, MatchingPair } from '@/services/api';
 import { queryClient } from '@/queryClient';
 import { CheerfulBackLink } from '@/components/CheerfulBackLink';
 import TheorySlideCard from '@/components/TheorySlideCard';
@@ -41,6 +41,10 @@ export default function TheoryLessonPage() {
     string | null
   >(null);
   const [outOfLives, setOutOfLives] = useState(false);
+  const [matchLeftId, setMatchLeftId] = useState<string | null>(null);
+  const [matchPairs, setMatchPairs] = useState<
+    Array<{ leftOptionId: string; rightOptionId: string; pairIndex: number }>
+  >([]);
 
   const progressQuery = useQuery({
     queryKey: ['progress-me'],
@@ -67,6 +71,11 @@ export default function TheoryLessonPage() {
     setPhase('read');
     setQIndex(0);
   }, [theoryId]);
+
+  useEffect(() => {
+    setMatchLeftId(null);
+    setMatchPairs([]);
+  }, [qIndex, phase, theoryId]);
 
   const quizTheoryId =
     theoryQuery.data != null
@@ -152,6 +161,27 @@ export default function TheoryLessonPage() {
         res.correctOptionId ??
           (res.isCorrect ? variables.selectedOptionId : null),
       );
+      setLastXp((x) => x + res.xpEarned);
+      if (!res.isCorrect && heartsCount <= 1) {
+        setOutOfLives(true);
+      }
+      queryClient.invalidateQueries({ queryKey: ['progress-me'] });
+      queryClient.invalidateQueries({ queryKey: ['level-detail', levelId] });
+    },
+  });
+
+  const matchingMut = useMutation({
+    mutationFn: ({
+      questionId,
+      pairs,
+    }: {
+      questionId: string;
+      pairs: MatchingPair[];
+    }) => mobileApi.submitMatching(questionId, pairs),
+    onSuccess: (res) => {
+      setFeedback(res.isCorrect ? 'correct' : 'wrong');
+      setPickedOptionId(null);
+      setRevealedCorrectOptionId(null);
       setLastXp((x) => x + res.xpEarned);
       if (!res.isCorrect && heartsCount <= 1) {
         setOutOfLives(true);
@@ -512,104 +542,247 @@ export default function TheoryLessonPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3">
-              {[...question.options]
-                .sort((a, b) => a.orderIndex - b.orderIndex)
-                .map((opt, oi) => {
-                  const letter = String.fromCharCode(65 + oi);
-                  const pickable =
-                    !feedback && !answerMut.isPending && canDoQuiz;
-                  const showResult = Boolean(feedback);
-                  const isWrongPick =
-                    showResult &&
-                    feedback === 'wrong' &&
-                    pickedOptionId === opt.id;
-                  const isCorrectReveal =
-                    showResult &&
-                    revealedCorrectOptionId != null &&
-                    revealedCorrectOptionId === opt.id;
-                  const isOtherAfterResult =
-                    showResult && !isWrongPick && !isCorrectReveal;
+            {question.type === 'MATCHING' ? (
+              (() => {
+                const left = [...question.options].sort(
+                  (a, b) => a.orderIndex - b.orderIndex,
+                );
+                const right = left.map((_, i) => left[(i + 1) % left.length]);
+                const byLeft = new Map(
+                  matchPairs.map((p) => [p.leftOptionId, p]),
+                );
+                const byRight = new Map(
+                  matchPairs.map((p) => [p.rightOptionId, p]),
+                );
+                const palette = [
+                  'border-blue-500 bg-blue-50',
+                  'border-emerald-500 bg-emerald-50',
+                  'border-amber-500 bg-amber-50',
+                  'border-purple-500 bg-purple-50',
+                  'border-rose-500 bg-rose-50',
+                  'border-cyan-500 bg-cyan-50',
+                ] as const;
 
-                  return (
-                    <motion.button
-                      key={opt.id}
-                      type="button"
-                      disabled={!pickable}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        delay: oi * 0.07,
-                        type: 'spring',
-                        stiffness: 380,
-                        damping: 26,
-                      }}
-                      whileTap={pickable ? { scale: 0.98 } : undefined}
-                      onClick={() => onPickOption(opt.id)}
-                      className={clsx(
-                        'flex items-start gap-3 rounded-2xl border-2 px-3 py-3.5 text-left shadow-sm transition',
-                        !isWrongPick &&
-                          !isCorrectReveal &&
-                          'border-slate-200/90 bg-white dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]',
-                        pickable &&
-                          'hover:border-blue-400 hover:bg-sky-50/80 hover:shadow-md dark:hover:border-[var(--learn-blue)] dark:hover:bg-[#1e3a5f]/40 dark:hover:shadow-[0_0_20px_rgba(61,142,255,0.15)]',
-                        isWrongPick &&
-                          'border-rose-500 bg-rose-50 shadow-md dark:border-[var(--learn-red)] dark:bg-[#3d151a]/90',
-                        isCorrectReveal &&
-                          'border-emerald-500 bg-emerald-50 shadow-md dark:border-[var(--learn-green)] dark:bg-[#0d241c]',
-                        isOtherAfterResult && 'opacity-55',
-                        !canDoQuiz && !showResult && 'opacity-60',
-                      )}
-                    >
-                      <span
-                        className={clsx(
-                          'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 text-sm font-black text-white shadow-md',
-                          isWrongPick &&
-                            'border-rose-600 bg-rose-600 ring-2 ring-rose-300/40 dark:border-[var(--learn-red)] dark:bg-[var(--learn-red)] dark:ring-rose-400/25',
-                          isCorrectReveal &&
-                            'border-emerald-600 bg-emerald-600 ring-2 ring-emerald-300/40 dark:border-[var(--learn-green)] dark:bg-[var(--learn-green)] dark:ring-emerald-400/25',
-                          !isWrongPick &&
-                            !isCorrectReveal &&
-                            'border-blue-500/50 bg-blue-600 ring-2 ring-blue-400/25 dark:border-[var(--learn-blue)] dark:bg-[var(--learn-blue)] dark:ring-blue-400/20',
-                          isOtherAfterResult &&
-                            'border-slate-300 bg-slate-400 text-white ring-0 dark:border-slate-600 dark:bg-slate-600',
-                        )}
-                      >
-                        {letter}
-                      </span>
-                      <span
-                        className={clsx(
-                          'min-w-0 flex-1 pt-0.5 text-base font-bold',
-                          isWrongPick &&
-                            'text-rose-900 dark:text-rose-100',
-                          isCorrectReveal &&
-                            'text-emerald-900 dark:text-emerald-100',
-                          !isWrongPick &&
-                            !isCorrectReveal &&
-                            'text-slate-800 dark:text-slate-100',
-                        )}
-                      >
-                        {opt.optionText}
-                        {opt.matchText ? (
-                          <span
+                const pickable =
+                  !feedback && !matchingMut.isPending && canDoQuiz;
+                const lockOtherLeft = matchLeftId != null;
+
+                const onPickLeft = (id: string) => {
+                  if (!pickable) return;
+                  if (byLeft.has(id)) return;
+                  setMatchLeftId(id);
+                };
+
+                const onPickRight = (rightId: string) => {
+                  if (!pickable) return;
+                  if (!matchLeftId) return;
+                  if (byLeft.has(matchLeftId) || byRight.has(rightId)) return;
+
+                  const nextIndex = matchPairs.length;
+                  const next = [
+                    ...matchPairs,
+                    {
+                      leftOptionId: matchLeftId,
+                      rightOptionId: rightId,
+                      pairIndex: nextIndex,
+                    },
+                  ];
+                  setMatchPairs(next);
+                  setMatchLeftId(null);
+
+                  if (next.length === left.length) {
+                    matchingMut.mutate({
+                      questionId: question.id,
+                      pairs: next.map(({ leftOptionId, rightOptionId }) => ({
+                        leftOptionId,
+                        rightOptionId,
+                      })),
+                    });
+                  }
+                };
+
+                const getPairClasses = (pairIndex: number) =>
+                  palette[pairIndex % palette.length];
+
+                return (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-2">
+                      {left.map((opt, i) => {
+                        const paired = byLeft.get(opt.id);
+                        const active = matchLeftId === opt.id;
+                        const disabled =
+                          !pickable ||
+                          paired != null ||
+                          (lockOtherLeft && !active);
+                        const pairCls =
+                          paired != null
+                            ? getPairClasses(paired.pairIndex)
+                            : '';
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => onPickLeft(opt.id)}
                             className={clsx(
-                              'mt-1 block text-xs font-medium',
-                              isWrongPick && 'text-rose-800/90 dark:text-rose-200/80',
-                              isCorrectReveal &&
-                                'text-emerald-800/90 dark:text-emerald-200/80',
-                              !isWrongPick &&
-                                !isCorrectReveal &&
-                                'text-slate-500 dark:text-slate-400',
+                              'flex items-center justify-between gap-2 rounded-2xl border-2 px-3 py-3 text-left shadow-sm transition',
+                              'border-slate-200 bg-white dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]',
+                              paired != null && pairCls,
+                              active &&
+                                'border-blue-500 ring-2 ring-blue-300/40 dark:ring-blue-400/20',
+                              disabled && 'opacity-70',
                             )}
                           >
-                            {opt.matchText}
-                          </span>
-                        ) : null}
-                      </span>
-                    </motion.button>
-                  );
-                })}
-            </div>
+                            <span className="min-w-0 flex-1 font-bold text-slate-900 dark:text-white">
+                              {String.fromCharCode(65 + i)}. {opt.optionText}
+                            </span>
+                            {paired != null && (
+                              <span className="text-xs font-extrabold text-slate-600">
+                                #{paired.pairIndex + 1}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      {right.map((opt, i) => {
+                        const paired = byRight.get(opt.id);
+                        const disabled = !pickable || !matchLeftId || paired != null;
+                        const pairCls =
+                          paired != null
+                            ? getPairClasses(paired.pairIndex)
+                            : '';
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => onPickRight(opt.id)}
+                            className={clsx(
+                              'flex items-center justify-between gap-2 rounded-2xl border-2 px-3 py-3 text-left shadow-sm transition',
+                              'border-slate-200 bg-white dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]',
+                              paired != null && pairCls,
+                              disabled && 'opacity-70',
+                            )}
+                          >
+                            <span className="min-w-0 flex-1 font-bold text-slate-900 dark:text-white">
+                              {String.fromCharCode(65 + i)}. {opt.matchText ?? ''}
+                            </span>
+                            {paired != null && (
+                              <span className="text-xs font-extrabold text-slate-600">
+                                #{paired.pairIndex + 1}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="flex flex-col gap-3">
+                {[...question.options]
+                  .sort((a, b) => a.orderIndex - b.orderIndex)
+                  .map((opt, oi) => {
+                    const letter = String.fromCharCode(65 + oi);
+                    const pickable =
+                      !feedback && !answerMut.isPending && canDoQuiz;
+                    const showResult = Boolean(feedback);
+                    const isWrongPick =
+                      showResult &&
+                      feedback === 'wrong' &&
+                      pickedOptionId === opt.id;
+                    const isCorrectReveal =
+                      showResult &&
+                      revealedCorrectOptionId != null &&
+                      revealedCorrectOptionId === opt.id;
+                    const isOtherAfterResult =
+                      showResult && !isWrongPick && !isCorrectReveal;
+
+                    return (
+                      <motion.button
+                        key={opt.id}
+                        type="button"
+                        disabled={!pickable}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          delay: oi * 0.07,
+                          type: 'spring',
+                          stiffness: 380,
+                          damping: 26,
+                        }}
+                        whileTap={pickable ? { scale: 0.98 } : undefined}
+                        onClick={() => onPickOption(opt.id)}
+                        className={clsx(
+                          'flex items-start gap-3 rounded-2xl border-2 px-3 py-3.5 text-left shadow-sm transition',
+                          !isWrongPick &&
+                            !isCorrectReveal &&
+                            'border-slate-200/90 bg-white dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]',
+                          pickable &&
+                            'hover:border-blue-400 hover:bg-sky-50/80 hover:shadow-md dark:hover:border-[var(--learn-blue)] dark:hover:bg-[#1e3a5f]/40 dark:hover:shadow-[0_0_20px_rgba(61,142,255,0.15)]',
+                          isWrongPick &&
+                            'border-rose-500 bg-rose-50 shadow-md dark:border-[var(--learn-red)] dark:bg-[#3d151a]/90',
+                          isCorrectReveal &&
+                            'border-emerald-500 bg-emerald-50 shadow-md dark:border-[var(--learn-green)] dark:bg-[#0d241c]',
+                          isOtherAfterResult && 'opacity-55',
+                          !canDoQuiz && !showResult && 'opacity-60',
+                        )}
+                      >
+                        <span
+                          className={clsx(
+                            'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 text-sm font-black text-white shadow-md',
+                            isWrongPick &&
+                              'border-rose-600 bg-rose-600 ring-2 ring-rose-300/40 dark:border-[var(--learn-red)] dark:bg-[var(--learn-red)] dark:ring-rose-400/25',
+                            isCorrectReveal &&
+                              'border-emerald-600 bg-emerald-600 ring-2 ring-emerald-300/40 dark:border-[var(--learn-green)] dark:bg-[var(--learn-green)] dark:ring-emerald-400/25',
+                            !isWrongPick &&
+                              !isCorrectReveal &&
+                              'border-blue-500/50 bg-blue-600 ring-2 ring-blue-400/25 dark:border-[var(--learn-blue)] dark:bg-[var(--learn-blue)] dark:ring-blue-400/20',
+                            isOtherAfterResult &&
+                              'border-slate-300 bg-slate-400 text-white ring-0 dark:border-slate-600 dark:bg-slate-600',
+                          )}
+                        >
+                          {letter}
+                        </span>
+                        <span
+                          className={clsx(
+                            'min-w-0 flex-1 pt-0.5 text-base font-bold',
+                            isWrongPick &&
+                              'text-rose-900 dark:text-rose-100',
+                            isCorrectReveal &&
+                              'text-emerald-900 dark:text-emerald-100',
+                            !isWrongPick &&
+                              !isCorrectReveal &&
+                              'text-slate-800 dark:text-slate-100',
+                          )}
+                        >
+                          {opt.optionText}
+                          {opt.matchText ? (
+                            <span
+                              className={clsx(
+                                'mt-1 block text-xs font-medium',
+                                isWrongPick &&
+                                  'text-rose-800/90 dark:text-rose-200/80',
+                                isCorrectReveal &&
+                                  'text-emerald-800/90 dark:text-emerald-200/80',
+                                !isWrongPick &&
+                                  !isCorrectReveal &&
+                                  'text-slate-500 dark:text-slate-400',
+                              )}
+                            >
+                              {opt.matchText}
+                            </span>
+                          ) : null}
+                        </span>
+                      </motion.button>
+                    );
+                  })}
+              </div>
+            )}
 
             {feedback && (
               <motion.div

@@ -2,9 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  CalendarDays,
   Camera,
-  ClipboardList,
   Crown,
   Languages,
   LogOut,
@@ -46,16 +44,6 @@ export default function ProfilePage() {
   const orgRankQuery = useQuery({
     queryKey: ['leaderboard-org-me'],
     queryFn: () => mobileApi.getOrganizationLeaderboard(1),
-  });
-
-  const examNextQuery = useQuery({
-    queryKey: ['exam-next'],
-    queryFn: () => mobileApi.getExamNext(),
-  });
-
-  const examHistoryQuery = useQuery({
-    queryKey: ['exam-history'],
-    queryFn: () => mobileApi.getExamHistory(),
   });
 
   const [checksType, setChecksType] = useState<EmployeeCheckType | 'all'>('all');
@@ -266,51 +254,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]">
-        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
-          <CalendarDays className="h-5 w-5 text-blue-600 dark:text-[var(--learn-blue)]" />
-          <span>{t({ uz: 'Keyingi imtihon', en: 'Next exam', ru: 'След. экзамен' })}</span>
-        </div>
-        {examNextQuery.data?.next ? (
-          <p className="text-sm text-slate-700 dark:text-slate-300">
-            {t({ uz: 'Taxminan', en: 'About', ru: 'Около' })}{' '}
-            <strong>{examNextQuery.data.next.daysLeft}</strong>{' '}
-            {t({ uz: 'kun qoldi', en: 'days left', ru: 'дн.' })}
-            <span className="mt-1 block text-xs text-slate-500">
-              {examNextQuery.data.next.scheduledAt
-                ? new Date(examNextQuery.data.next.scheduledAt).toLocaleDateString()
-                : new Date(examNextQuery.data.next.suggestedAt).toLocaleDateString()}
-            </span>
-          </p>
-        ) : (
-          <p className="text-sm text-slate-500">{t({ uz: 'Reja yo‘q', en: 'None scheduled', ru: 'Нет плана' })}</p>
-        )}
-      </div>
-
-      <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]">
-        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
-          <ClipboardList className="h-5 w-5 text-amber-600 dark:text-[var(--learn-gold)]" />
-          <span>{t({ uz: 'Imtihonlar tarixi', en: 'Exam history', ru: 'История экзаменов' })}</span>
-        </div>
-        <div className="max-h-48 space-y-2 overflow-y-auto text-sm">
-          {(examHistoryQuery.data ?? []).length === 0 ? (
-            <p className="text-slate-500">{t({ uz: 'Hozircha bo‘sh', en: 'Empty', ru: 'Пусто' })}</p>
-          ) : (
-            (examHistoryQuery.data ?? []).slice(0, 12).map((row) => (
-              <div
-                key={row.id}
-                className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2 dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]"
-              >
-                <p className="font-medium text-slate-900 dark:text-white">{row.examTitle ?? '—'}</p>
-                <p className="text-xs text-slate-500">
-                  {new Date(row.createdAt).toLocaleString()} · PT {row.ptScorePercent ?? '—'}% · TB{' '}
-                  {row.tbScorePercent ?? '—'}%
-                </p>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
 
       <div className="mb-6 rounded-3xl border border-amber-200/60 bg-amber-50/80 p-5 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]">
         <p className="text-sm text-amber-900 dark:text-[var(--learn-gold)]/90">

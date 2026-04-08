@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { Navigate, Outlet, NavLink } from 'react-router-dom';
 import {
-  ClipboardList,
   Crown,
   Heart,
   HeartCrack,
@@ -104,20 +103,6 @@ export default function LearnLayout() {
 
       <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white/95 px-safe-4 pb-safe backdrop-blur dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/98 dark:backdrop-blur-md">
         <div className="mx-auto flex max-w-lg">
-          <NavLink
-            to="/learn/exam"
-            className={({ isActive }) =>
-              clsx(
-                'flex min-w-0 flex-1 flex-col items-center gap-1 py-3 text-[10px] font-medium sm:text-xs',
-                isActive
-                  ? 'text-amber-600 dark:text-[var(--learn-gold)]'
-                  : 'text-slate-500 dark:text-[var(--learn-muted)]',
-              )
-            }
-          >
-            <ClipboardList className="h-5 w-5 shrink-0" />
-            {t({ uz: 'Imtihon', en: 'Exam', ru: 'Экзамен' })}
-          </NavLink>
           <NavLink
             to="/learn"
             end
