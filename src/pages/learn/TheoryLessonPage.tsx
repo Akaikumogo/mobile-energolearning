@@ -112,7 +112,8 @@ export default function TheoryLessonPage() {
         for (let j = 0; j < sec.slides.length; j++) {
           flat.push({ kind: 'slide', sectionIdx: si, slideIdx: j });
         }
-      } else if (sec.content?.trim()) {
+      } else {
+        // even if content is empty, keep the section navigable
         flat.push({ kind: 'sectionText', sectionIdx: si });
       }
     }
@@ -555,12 +556,12 @@ export default function TheoryLessonPage() {
                   matchPairs.map((p) => [p.rightOptionId, p]),
                 );
                 const palette = [
-                  'border-blue-500 bg-blue-50',
-                  'border-emerald-500 bg-emerald-50',
-                  'border-amber-500 bg-amber-50',
-                  'border-purple-500 bg-purple-50',
-                  'border-rose-500 bg-rose-50',
-                  'border-cyan-500 bg-cyan-50',
+                  'border-blue-500 bg-blue-50 dark:border-blue-400/70 dark:bg-blue-950/25',
+                  'border-emerald-500 bg-emerald-50 dark:border-emerald-400/70 dark:bg-emerald-950/25',
+                  'border-amber-500 bg-amber-50 dark:border-amber-400/70 dark:bg-amber-950/25',
+                  'border-purple-500 bg-purple-50 dark:border-purple-400/70 dark:bg-purple-950/25',
+                  'border-rose-500 bg-rose-50 dark:border-rose-400/70 dark:bg-rose-950/25',
+                  'border-cyan-500 bg-cyan-50 dark:border-cyan-400/70 dark:bg-cyan-950/25',
                 ] as const;
 
                 const pickable =
@@ -570,7 +571,7 @@ export default function TheoryLessonPage() {
                 const onPickLeft = (id: string) => {
                   if (!pickable) return;
                   if (byLeft.has(id)) return;
-                  setMatchLeftId(id);
+                  setMatchLeftId((cur) => (cur === id ? null : id));
                 };
 
                 const onPickRight = (rightId: string) => {
@@ -578,7 +579,9 @@ export default function TheoryLessonPage() {
                   if (!matchLeftId) return;
                   if (byLeft.has(matchLeftId) || byRight.has(rightId)) return;
 
-                  const nextIndex = matchPairs.length;
+                  const used = new Set(matchPairs.map((p) => p.pairIndex));
+                  let nextIndex = 0;
+                  while (used.has(nextIndex)) nextIndex++;
                   const next = [
                     ...matchPairs,
                     {
@@ -589,23 +592,22 @@ export default function TheoryLessonPage() {
                   ];
                   setMatchPairs(next);
                   setMatchLeftId(null);
-
-                  if (next.length === left.length) {
-                    matchingMut.mutate({
-                      questionId: question.id,
-                      pairs: next.map(({ leftOptionId, rightOptionId }) => ({
-                        leftOptionId,
-                        rightOptionId,
-                      })),
-                    });
-                  }
                 };
 
                 const getPairClasses = (pairIndex: number) =>
                   palette[pairIndex % palette.length];
 
+                const removePairByIndex = (pairIndex: number) => {
+                  if (feedback || matchingMut.isPending) return;
+                  setMatchPairs((prev) => prev.filter((p) => p.pairIndex !== pairIndex));
+                  setMatchLeftId(null);
+                };
+
+                const canSubmit = matchPairs.length === left.length;
+
                 return (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-2">
                       {left.map((opt, i) => {
                         const paired = byLeft.get(opt.id);
@@ -637,7 +639,14 @@ export default function TheoryLessonPage() {
                               {String.fromCharCode(65 + i)}. {opt.optionText}
                             </span>
                             {paired != null && (
-                              <span className="text-xs font-extrabold text-slate-600">
+                              <span
+                                className="text-xs font-extrabold text-slate-600"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  removePairByIndex(paired.pairIndex);
+                                }}
+                              >
                                 #{paired.pairIndex + 1}
                               </span>
                             )}
@@ -671,7 +680,14 @@ export default function TheoryLessonPage() {
                               {String.fromCharCode(65 + i)}. {opt.matchText ?? ''}
                             </span>
                             {paired != null && (
-                              <span className="text-xs font-extrabold text-slate-600">
+                              <span
+                                className="text-xs font-extrabold text-slate-600"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  removePairByIndex(paired.pairIndex);
+                                }}
+                              >
                                 #{paired.pairIndex + 1}
                               </span>
                             )}
@@ -679,6 +695,56 @@ export default function TheoryLessonPage() {
                         );
                       })}
                     </div>
+                    </div>
+
+                    {!feedback ? (
+                      <button
+                        type="button"
+                        disabled={!canSubmit || matchingMut.isPending}
+                        onClick={() => {
+                          if (!canSubmit) return;
+                          matchingMut.mutate({
+                            questionId: question.id,
+                            pairs: matchPairs
+                              .slice()
+                              .sort((a, b) => a.pairIndex - b.pairIndex)
+                              .map(({ leftOptionId, rightOptionId }) => ({
+                                leftOptionId,
+                                rightOptionId,
+                              })),
+                          });
+                        }}
+                        className={clsx(
+                          'w-full rounded-2xl py-3.5 text-base font-bold shadow-md transition',
+                          canSubmit && !matchingMut.isPending
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25 dark:bg-[var(--learn-blue)] dark:shadow-[0_8px_28px_rgba(61,142,255,0.35)]'
+                            : 'cursor-not-allowed bg-slate-300 text-slate-600 dark:bg-[var(--learn-card)] dark:text-[var(--learn-muted)]',
+                        )}
+                      >
+                        {t({ uz: "Jo'natish", en: 'Submit', ru: 'Отправить' })}
+                      </button>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      disabled={
+                        !feedback ||
+                        matchingMut.isPending ||
+                        answerMut.isPending
+                      }
+                      onClick={() => {
+                        if (!feedback) return;
+                        nextQuestion();
+                      }}
+                      className={clsx(
+                        'w-full rounded-2xl py-3.5 text-base font-bold shadow-md transition',
+                        feedback && !matchingMut.isPending
+                          ? 'bg-slate-800 text-white dark:bg-[var(--learn-surface)] dark:ring-1 dark:ring-[var(--learn-border)]'
+                          : 'cursor-not-allowed bg-slate-300 text-slate-600 dark:bg-[var(--learn-card)] dark:text-[var(--learn-muted)]',
+                      )}
+                    >
+                      {t({ uz: 'Keyingisi', en: 'Next', ru: 'Далее' })}
+                    </button>
                   </div>
                 );
               })()
