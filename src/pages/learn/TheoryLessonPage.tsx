@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
@@ -16,6 +16,7 @@ import mobileApi from '@/services/api';
 import type { MobileQuestion } from '@/services/api';
 import { queryClient } from '@/queryClient';
 import { CheerfulBackLink } from '@/components/CheerfulBackLink';
+import TheorySlideCard from '@/components/TheorySlideCard';
 import clsx from 'clsx';
 
 export default function TheoryLessonPage() {
@@ -26,6 +27,7 @@ export default function TheoryLessonPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [phase, setPhase] = useState<'read' | 'quiz' | 'done'>('read');
+  const [slideIdx, setSlideIdx] = useState(0);
   const [qIndex, setQIndex] = useState(0);
   const [lastXp, setLastXp] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
@@ -54,6 +56,15 @@ export default function TheoryLessonPage() {
     queryFn: () => mobileApi.getTheoryById(theoryId!),
     enabled: !!theoryId,
   });
+
+  const slideListLen = (() => {
+    const s = theoryQuery.data?.slides;
+    return s && s.length > 0 ? s.length : 0;
+  })();
+
+  useEffect(() => {
+    setSlideIdx(0);
+  }, [theoryId, slideListLen]);
 
   const quizTheoryId =
     theoryQuery.data != null
@@ -126,6 +137,8 @@ export default function TheoryLessonPage() {
 
   const theory = theoryQuery.data;
 
+  const slideList = theory?.slides?.length ? theory.slides : null;
+
   if (!theory) {
     return (
       <div className="p-6 text-red-600">
@@ -155,37 +168,92 @@ export default function TheoryLessonPage() {
               </span>
               {theory.title}
             </h1>
-            <div className="mb-6 max-w-none whitespace-pre-wrap rounded-3xl border border-slate-200/80 bg-white p-4 text-sm leading-relaxed text-slate-700 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-slate-300">
-              {theory.content || ''}
-            </div>
-            <motion.button
-              type="button"
-              whileTap={canDoQuiz ? { scale: 0.98 } : undefined}
-              onClick={() => {
-                if (!canDoQuiz) return;
-                setPhase('quiz');
-              }}
-              disabled={!canDoQuiz}
-              className={clsx(
-                'w-full rounded-2xl py-4 text-base font-bold shadow-lg transition',
-                canDoQuiz
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25 dark:bg-[var(--learn-blue)] dark:shadow-[0_8px_28px_rgba(61,142,255,0.35)]'
-                  : 'cursor-not-allowed bg-slate-200 text-slate-500 dark:bg-[var(--learn-card)] dark:text-[var(--learn-muted)]',
-              )}
-            >
-              <span className="inline-flex items-center justify-center gap-2">
-                {t({
-                  uz: 'Savollarni boshlash',
-                  en: 'Start questions',
-                  ru: 'Начать вопросы',
-                })}
-                {canDoQuiz ? (
-                  <span className="text-lg leading-none" aria-hidden>
-                    ✨
-                  </span>
+            {slideList ? (
+              <>
+                {theory.content?.trim() ? (
+                  <div className="mb-4 max-w-none whitespace-pre-wrap rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 text-xs leading-relaxed text-slate-600 dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)] dark:text-slate-400">
+                    {theory.content}
+                  </div>
                 ) : null}
-              </span>
-            </motion.button>
+                <p className="mb-2 text-center text-xs font-bold tabular-nums text-slate-500 dark:text-slate-400">
+                  {slideIdx + 1} / {slideList.length}
+                </p>
+                <TheorySlideCard slide={slideList[slideIdx]} />
+                {slideIdx + 1 < slideList.length ? (
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setSlideIdx((i) => i + 1)}
+                    className="w-full rounded-2xl bg-slate-800 py-4 text-base font-bold text-white shadow-lg dark:bg-[var(--learn-surface)] dark:ring-1 dark:ring-[var(--learn-border)]"
+                  >
+                    {t({ uz: 'Keyingisi', en: 'Next', ru: 'Далее' })}
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    type="button"
+                    whileTap={canDoQuiz ? { scale: 0.98 } : undefined}
+                    onClick={() => {
+                      if (!canDoQuiz) return;
+                      setPhase('quiz');
+                    }}
+                    disabled={!canDoQuiz}
+                    className={clsx(
+                      'w-full rounded-2xl py-4 text-base font-bold shadow-lg transition',
+                      canDoQuiz
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25 dark:bg-[var(--learn-blue)] dark:shadow-[0_8px_28px_rgba(61,142,255,0.35)]'
+                        : 'cursor-not-allowed bg-slate-200 text-slate-500 dark:bg-[var(--learn-card)] dark:text-[var(--learn-muted)]',
+                    )}
+                  >
+                    <span className="inline-flex items-center justify-center gap-2">
+                      {t({
+                        uz: 'Savollarni boshlash',
+                        en: 'Start questions',
+                        ru: 'Начать вопросы',
+                      })}
+                      {canDoQuiz ? (
+                        <span className="text-lg leading-none" aria-hidden>
+                          ✨
+                        </span>
+                      ) : null}
+                    </span>
+                  </motion.button>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="mb-6 max-w-none whitespace-pre-wrap rounded-3xl border border-slate-200/80 bg-white p-4 text-sm leading-relaxed text-slate-700 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-slate-300">
+                  {theory.content || ''}
+                </div>
+                <motion.button
+                  type="button"
+                  whileTap={canDoQuiz ? { scale: 0.98 } : undefined}
+                  onClick={() => {
+                    if (!canDoQuiz) return;
+                    setPhase('quiz');
+                  }}
+                  disabled={!canDoQuiz}
+                  className={clsx(
+                    'w-full rounded-2xl py-4 text-base font-bold shadow-lg transition',
+                    canDoQuiz
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25 dark:bg-[var(--learn-blue)] dark:shadow-[0_8px_28px_rgba(61,142,255,0.35)]'
+                      : 'cursor-not-allowed bg-slate-200 text-slate-500 dark:bg-[var(--learn-card)] dark:text-[var(--learn-muted)]',
+                  )}
+                >
+                  <span className="inline-flex items-center justify-center gap-2">
+                    {t({
+                      uz: 'Savollarni boshlash',
+                      en: 'Start questions',
+                      ru: 'Начать вопросы',
+                    })}
+                    {canDoQuiz ? (
+                      <span className="text-lg leading-none" aria-hidden>
+                        ✨
+                      </span>
+                    ) : null}
+                  </span>
+                </motion.button>
+              </>
+            )}
             {!canDoQuiz && (
               <p className="mt-3 text-center text-sm text-rose-600 dark:text-[var(--learn-red)]">
                 {t({

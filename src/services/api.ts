@@ -139,6 +139,12 @@ export type MobileQuestion = {
   options: MobileQuestionOption[];
 };
 
+export type TheorySlide = {
+  head: string;
+  items: string[];
+  warn?: boolean;
+};
+
 export type MobileTheory = {
   id: string;
   levelId: string;
@@ -146,6 +152,7 @@ export type MobileTheory = {
   content: string;
   orderIndex: number;
   quizTheoryId: string;
+  slides?: TheorySlide[] | null;
 };
 
 export type LeaderboardRow = {
