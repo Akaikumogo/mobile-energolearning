@@ -1,5 +1,15 @@
+import { useMemo } from 'react';
 import { Navigate, Outlet, NavLink } from 'react-router-dom';
-import { ClipboardList, Crown, Home, QrCode, Trophy, User } from 'lucide-react';
+import {
+  ClipboardList,
+  Crown,
+  Heart,
+  HeartCrack,
+  Home,
+  QrCode,
+  Trophy,
+  User,
+} from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from '@/hooks/useTranslation';
 import mobileApi from '@/services/api';
@@ -26,6 +36,13 @@ export default function LearnLayout() {
   }
 
   const xp = progress?.totalXp ?? 0;
+  const heartsCount = progress?.hearts?.heartsCount ?? 0;
+  const heartsMax = progress?.hearts?.maxHearts ?? 5;
+  const heartsUi = useMemo(() => {
+    const cnt = Math.max(0, Math.min(heartsMax, heartsCount));
+    return { cnt, empty: Math.max(0, heartsMax - cnt) };
+  }, [heartsCount, heartsMax]);
+
   const globalRankQuery = useQuery({
     queryKey: ['leaderboard-global-me'],
     queryFn: () => mobileApi.getGlobalLeaderboard(1),
@@ -55,6 +72,27 @@ export default function LearnLayout() {
                 </span>
               </p>
             ) : null}
+            <span
+              className="inline-flex items-center gap-0.5 rounded-full border border-rose-200/80 bg-rose-50/90 px-2 py-0.5 dark:border-[var(--learn-red)]/45 dark:bg-[#2d1218]/70"
+              title={t({
+                uz: 'Jonlar',
+                en: 'Lives',
+                ru: 'Жизни',
+              })}
+            >
+              {Array.from({ length: heartsUi.cnt }).map((_, i) => (
+                <Heart
+                  key={`h-${i}`}
+                  className="h-3.5 w-3.5 fill-current text-rose-500 dark:text-[var(--learn-red)]"
+                />
+              ))}
+              {Array.from({ length: heartsUi.empty }).map((_, i) => (
+                <HeartCrack
+                  key={`e-${i}`}
+                  className="h-3.5 w-3.5 text-slate-400 opacity-70 dark:text-[var(--learn-muted)]"
+                />
+              ))}
+            </span>
           </div>
         </div>
         <ThemeToggle />
