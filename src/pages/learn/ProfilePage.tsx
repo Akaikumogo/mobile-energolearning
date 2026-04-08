@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
-import mobileApi, { BACKEND_ORIGIN } from '@/services/api';
+import mobileApi, { BACKEND_ORIGIN, type EmployeeCheckType } from '@/services/api';
 import { queryClient } from '@/queryClient';
 import { useApp } from '@/hooks/useApp';
 import clsx from 'clsx';
@@ -56,6 +56,16 @@ export default function ProfilePage() {
   const examHistoryQuery = useQuery({
     queryKey: ['exam-history'],
     queryFn: () => mobileApi.getExamHistory(),
+  });
+
+  const [checksType, setChecksType] = useState<EmployeeCheckType | 'all'>('all');
+  const myCertQuery = useQuery({
+    queryKey: ['my-employee-certificate'],
+    queryFn: () => mobileApi.getMyEmployeeCertificate(),
+  });
+  const myChecksQuery = useQuery({
+    queryKey: ['my-checks', checksType],
+    queryFn: () => mobileApi.listMyChecks(checksType === 'all' ? {} : { type: checksType }),
   });
 
   const logout = async () => {
@@ -190,6 +200,69 @@ export default function ProfilePage() {
               {item.label}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]">
+        <p className="text-xs font-semibold uppercase text-slate-500">
+          {t({ uz: 'Guvohnoma', en: 'Certificate', ru: 'Удостоверение' })}
+        </p>
+        {myCertQuery.data ? (
+          <div className="mt-3 space-y-1 text-sm text-slate-700 dark:text-slate-300">
+            <p>
+              <span className="text-slate-500">№ </span>
+              <strong>{myCertQuery.data.certificateNumber}</strong>
+            </p>
+            <p>
+              <span className="text-slate-500">{t({ uz: 'Lavozim', en: 'Position', ru: 'Должность' })}: </span>
+              {myCertQuery.data.positionTitle}
+            </p>
+            <p>
+              <span className="text-slate-500">{t({ uz: 'Taqdim etgan', en: 'Presented by', ru: 'Предъявил' })}: </span>
+              {myCertQuery.data.presentedByFullName}
+            </p>
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-slate-500">—</p>
+        )}
+      </div>
+
+      <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase text-slate-500">
+            {t({ uz: 'Tekshiruvlar', en: 'Checks', ru: 'Проверки' })}
+          </p>
+          <select
+            value={checksType}
+            onChange={(e) => setChecksType(e.target.value as any)}
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]"
+          >
+            <option value="all">{t({ uz: 'Hammasi', en: 'All', ru: 'Все' })}</option>
+            <option value="GENERAL_KNOWLEDGE">{t({ uz: 'Umumiy bilim', en: 'General', ru: 'Общие' })}</option>
+            <option value="SAFETY_TECHNIQUE">{t({ uz: 'Xavfsizlik', en: 'Safety', ru: 'ТБ' })}</option>
+            <option value="SPECIAL_WORK_PERMIT">{t({ uz: 'Maxsus ishlar', en: 'Special work', ru: 'Спец.работы' })}</option>
+            <option value="RESUSCITATION_TRAINING">{t({ uz: 'Reanimatsiya', en: 'Resuscitation', ru: 'Реанимация' })}</option>
+            <option value="MEDICAL_EXAM">{t({ uz: 'Tibbiy', en: 'Medical', ru: 'Медосмотр' })}</option>
+          </select>
+        </div>
+        <div className="mt-3 space-y-2">
+          {(myChecksQuery.data ?? []).length === 0 ? (
+            <p className="text-sm text-slate-500">—</p>
+          ) : (
+            (myChecksQuery.data ?? []).slice(0, 20).map((row) => (
+              <div
+                key={row.id}
+                className="rounded-2xl border border-slate-100 bg-slate-50/80 px-3 py-2 text-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]"
+              >
+                <p className="font-semibold text-slate-900 dark:text-white">
+                  {row.checkDate} · {row.type}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {row.grade ? `Baho: ${row.grade}` : ' '} {row.nextCheckDate ? ` · Next: ${row.nextCheckDate}` : ''}
+                </p>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
