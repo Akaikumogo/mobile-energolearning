@@ -55,10 +55,16 @@ export default function TheoryLessonPage() {
     enabled: !!theoryId,
   });
 
+  const quizTheoryId =
+    theoryQuery.data != null
+      ? (theoryQuery.data.quizTheoryId ?? theoryQuery.data.id)
+      : '';
+
   const questionsQuery = useQuery({
-    queryKey: ['theory-questions', theoryId],
-    queryFn: () => mobileApi.getQuestionsByTheory(theoryId!),
-    enabled: !!theoryId && phase !== 'read',
+    queryKey: ['theory-questions', quizTheoryId],
+    queryFn: () => mobileApi.getQuestionsByTheory(quizTheoryId),
+    enabled:
+      !!quizTheoryId && phase !== 'read' && theoryQuery.isSuccess,
   });
 
   const questions = (questionsQuery.data ?? []).sort(
@@ -149,10 +155,9 @@ export default function TheoryLessonPage() {
               </span>
               {theory.title}
             </h1>
-            <div
-              className="mb-6 max-w-none space-y-3 rounded-3xl border border-slate-200/80 bg-white p-4 text-sm leading-relaxed text-slate-700 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-slate-300 [&_a]:text-blue-600 dark:[&_a]:text-[var(--learn-blue)] [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5"
-              dangerouslySetInnerHTML={{ __html: theory.content || '' }}
-            />
+            <div className="mb-6 max-w-none whitespace-pre-wrap rounded-3xl border border-slate-200/80 bg-white p-4 text-sm leading-relaxed text-slate-700 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-slate-300">
+              {theory.content || ''}
+            </div>
             <motion.button
               type="button"
               whileTap={canDoQuiz ? { scale: 0.98 } : undefined}

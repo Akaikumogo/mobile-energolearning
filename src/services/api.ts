@@ -112,6 +112,7 @@ export type LevelDetailTheory = {
   orderIndex: number;
   totalQuestions: number;
   answeredQuestions: number;
+  quizTheoryId?: string;
 };
 
 export type LevelDetailResponse = {
@@ -144,6 +145,7 @@ export type MobileTheory = {
   title: string;
   content: string;
   orderIndex: number;
+  quizTheoryId: string;
 };
 
 export type LeaderboardRow = {
