@@ -13,11 +13,16 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
 import mobileApi from '@/services/api';
-import type { MobileQuestion } from '@/services/api';
+import type { MobileNazariyaSection, MobileQuestion } from '@/services/api';
 import { queryClient } from '@/queryClient';
 import { CheerfulBackLink } from '@/components/CheerfulBackLink';
 import TheorySlideCard from '@/components/TheorySlideCard';
+import LearnProgressBar from '@/components/LearnProgressBar';
 import clsx from 'clsx';
+
+type FlatReadStep =
+  | { kind: 'slide'; sectionIdx: number; slideIdx: number }
+  | { kind: 'sectionText'; sectionIdx: number };
 
 export default function TheoryLessonPage() {
   const { levelId, theoryId } = useParams<{
@@ -27,7 +32,7 @@ export default function TheoryLessonPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [phase, setPhase] = useState<'read' | 'quiz' | 'done'>('read');
-  const [slideIdx, setSlideIdx] = useState(0);
+  const [readStep, setReadStep] = useState(0);
   const [qIndex, setQIndex] = useState(0);
   const [lastXp, setLastXp] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
@@ -57,14 +62,11 @@ export default function TheoryLessonPage() {
     enabled: !!theoryId,
   });
 
-  const slideListLen = (() => {
-    const s = theoryQuery.data?.slides;
-    return s && s.length > 0 ? s.length : 0;
-  })();
-
   useEffect(() => {
-    setSlideIdx(0);
-  }, [theoryId, slideListLen]);
+    setReadStep(0);
+    setPhase('read');
+    setQIndex(0);
+  }, [theoryId]);
 
   const quizTheoryId =
     theoryQuery.data != null
@@ -74,14 +76,66 @@ export default function TheoryLessonPage() {
   const questionsQuery = useQuery({
     queryKey: ['theory-questions', quizTheoryId],
     queryFn: () => mobileApi.getQuestionsByTheory(quizTheoryId),
-    enabled:
-      !!quizTheoryId && phase !== 'read' && theoryQuery.isSuccess,
+    enabled: !!quizTheoryId && theoryQuery.isSuccess,
   });
+
+  const sections: MobileNazariyaSection[] = useMemo(() => {
+    const theory = theoryQuery.data;
+    if (!theory) return [];
+    const n = theory.nazariyaSections;
+    if (n && n.length > 0) return n;
+    return [
+      {
+        id: theory.id,
+        title: theory.title,
+        slides: theory.slides ?? null,
+        content: !theory.slides?.length ? theory.content : '',
+      },
+    ];
+  }, [theoryQuery.data]);
+
+  const flatReadSteps = useMemo((): FlatReadStep[] => {
+    const theory = theoryQuery.data;
+    const flat: FlatReadStep[] = [];
+    for (let si = 0; si < sections.length; si++) {
+      const sec = sections[si];
+      if (sec.slides?.length) {
+        for (let j = 0; j < sec.slides.length; j++) {
+          flat.push({ kind: 'slide', sectionIdx: si, slideIdx: j });
+        }
+      } else if (sec.content?.trim()) {
+        flat.push({ kind: 'sectionText', sectionIdx: si });
+      }
+    }
+    if (flat.length === 0 && theory?.content?.trim()) {
+      flat.push({ kind: 'sectionText', sectionIdx: 0 });
+    }
+    return flat;
+  }, [sections, theoryQuery.data]);
 
   const questions = (questionsQuery.data ?? []).sort(
     (a, b) => a.orderIndex - b.orderIndex,
   );
   const question: MobileQuestion | undefined = questions[qIndex];
+
+  const totalReadingSteps = flatReadSteps.length;
+  const qLen =
+    questions.length > 0
+      ? questions.length
+      : questionsQuery.isLoading && quizTheoryId
+        ? 4
+        : 0;
+  const totalSteps = totalReadingSteps + qLen;
+  const progressPct = useMemo(() => {
+    if (totalSteps <= 0) return 0;
+    const current =
+      phase === 'done'
+        ? totalSteps
+        : phase === 'quiz'
+          ? totalReadingSteps + qIndex + 1
+          : readStep + 1;
+    return Math.min(100, (current / totalSteps) * 100);
+  }, [phase, totalSteps, totalReadingSteps, qIndex, readStep]);
 
   const answerMut = useMutation({
     mutationFn: ({
@@ -137,8 +191,6 @@ export default function TheoryLessonPage() {
 
   const theory = theoryQuery.data;
 
-  const slideList = theory?.slides?.length ? theory.slides : null;
-
   if (!theory) {
     return (
       <div className="p-6 text-red-600">
@@ -146,6 +198,27 @@ export default function TheoryLessonPage() {
       </div>
     );
   }
+
+  const step = flatReadSteps[readStep];
+  const sec = step ? sections[step.sectionIdx] : undefined;
+  const nazCount = Math.max(sections.length, 1);
+  const nazNum = step ? step.sectionIdx + 1 : 1;
+  const slideInSec =
+    step?.kind === 'slide' && sec?.slides?.length
+      ? step.slideIdx + 1
+      : step?.kind === 'sectionText'
+        ? 1
+        : 0;
+  const slideMax =
+    step?.kind === 'slide' && sec?.slides?.length ? sec.slides.length : 1;
+
+  const nextRead = () => {
+    if (readStep < flatReadSteps.length - 1) {
+      setReadStep((s) => s + 1);
+    } else if (canDoQuiz) {
+      setPhase('quiz');
+    }
+  };
 
   return (
     <div className="px-4 py-4">
@@ -168,22 +241,124 @@ export default function TheoryLessonPage() {
               </span>
               {theory.title}
             </h1>
-            {slideList ? (
+
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span
+                className={clsx(
+                  'rounded-full border px-3 py-1 text-[11px] font-bold tabular-nums',
+                  'border-amber-400/60 bg-amber-500/15 text-amber-900 dark:border-[var(--learn-gold)]/40 dark:bg-amber-500/10 dark:text-[var(--learn-gold)]',
+                )}
+              >
+                {t({ uz: 'Nazariya', en: 'Theory', ru: 'Теория' })}{' '}
+                {nazNum}/{nazCount}
+              </span>
+              {step?.kind === 'slide' ? (
+                <span
+                  className={clsx(
+                    'rounded-full border px-3 py-1 text-[11px] font-bold tabular-nums',
+                    'border-slate-300/80 bg-slate-100 text-slate-800 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-slate-200',
+                  )}
+                >
+                  {t({ uz: 'Slayd', en: 'Slide', ru: 'Слайд' })}{' '}
+                  {slideInSec}/{slideMax}
+                </span>
+              ) : step?.kind === 'sectionText' ? (
+                <span
+                  className={clsx(
+                    'rounded-full border px-3 py-1 text-[11px] font-bold tabular-nums',
+                    'border-slate-300/80 bg-slate-100 text-slate-800 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-slate-200',
+                  )}
+                >
+                  {t({ uz: 'Matn', en: 'Text', ru: 'Текст' })}{' '}
+                  {readStep + 1}/{flatReadSteps.length}
+                </span>
+              ) : null}
+              {qLen > 0 ? (
+                <span
+                  className={clsx(
+                    'ml-auto rounded-full border px-3 py-1 text-[11px] font-bold tabular-nums',
+                    'border-blue-300/70 bg-blue-500/10 text-blue-900 dark:border-[var(--learn-blue)]/50 dark:bg-blue-500/10 dark:text-blue-200',
+                  )}
+                >
+                  {t({ uz: 'Savollar', en: 'Questions', ru: 'Вопросы' })}{' '}
+                  {qLen}
+                </span>
+              ) : null}
+            </div>
+            <div className="mb-4">
+              <LearnProgressBar value={progressPct} />
+            </div>
+
+            {sec && step?.kind === 'slide' ? (
               <>
-                {theory.content?.trim() ? (
+                {readStep === 0 && theory.content?.trim() ? (
                   <div className="mb-4 max-w-none whitespace-pre-wrap rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 text-xs leading-relaxed text-slate-600 dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)] dark:text-slate-400">
                     {theory.content}
                   </div>
                 ) : null}
-                <p className="mb-2 text-center text-xs font-bold tabular-nums text-slate-500 dark:text-slate-400">
-                  {slideIdx + 1} / {slideList.length}
-                </p>
-                <TheorySlideCard slide={slideList[slideIdx]} />
-                {slideIdx + 1 < slideList.length ? (
+                {sec.title ? (
+                  <p className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    {sec.title}
+                  </p>
+                ) : null}
+                <TheorySlideCard slide={sec.slides![step.slideIdx]} />
+                {readStep < flatReadSteps.length - 1 ? (
                   <motion.button
                     type="button"
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setSlideIdx((i) => i + 1)}
+                    onClick={nextRead}
+                    className="mt-4 w-full rounded-2xl bg-slate-800 py-4 text-base font-bold text-white shadow-lg dark:bg-[var(--learn-surface)] dark:ring-1 dark:ring-[var(--learn-border)]"
+                  >
+                    {t({ uz: 'Keyingisi', en: 'Next', ru: 'Далее' })}
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    type="button"
+                    whileTap={canDoQuiz ? { scale: 0.98 } : undefined}
+                    onClick={nextRead}
+                    disabled={!canDoQuiz}
+                    className={clsx(
+                      'mt-4 w-full rounded-2xl py-4 text-base font-bold shadow-lg transition',
+                      canDoQuiz
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25 dark:bg-[var(--learn-blue)] dark:shadow-[0_8px_28px_rgba(61,142,255,0.35)]'
+                        : 'cursor-not-allowed bg-slate-200 text-slate-500 dark:bg-[var(--learn-card)] dark:text-[var(--learn-muted)]',
+                    )}
+                  >
+                    <span className="inline-flex items-center justify-center gap-2">
+                      {t({
+                        uz: 'Savollarni boshlash',
+                        en: 'Start questions',
+                        ru: 'Начать вопросы',
+                      })}
+                      {canDoQuiz ? (
+                        <span className="text-lg leading-none" aria-hidden>
+                          ✨
+                        </span>
+                      ) : null}
+                    </span>
+                  </motion.button>
+                )}
+              </>
+            ) : sec && step?.kind === 'sectionText' ? (
+              <>
+                {readStep === 0 && theory.content?.trim() ? (
+                  <div className="mb-4 max-w-none whitespace-pre-wrap rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 text-xs leading-relaxed text-slate-600 dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)] dark:text-slate-400">
+                    {theory.content}
+                  </div>
+                ) : null}
+                {sec.title ? (
+                  <p className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    {sec.title}
+                  </p>
+                ) : null}
+                <div className="mb-6 max-w-none whitespace-pre-wrap rounded-3xl border border-slate-200/80 bg-white p-4 text-sm leading-relaxed text-slate-700 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-slate-300">
+                  {sec.content?.trim() || theory.content || ''}
+                </div>
+                {readStep < flatReadSteps.length - 1 ? (
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.98 }}
+                    onClick={nextRead}
                     className="w-full rounded-2xl bg-slate-800 py-4 text-base font-bold text-white shadow-lg dark:bg-[var(--learn-surface)] dark:ring-1 dark:ring-[var(--learn-border)]"
                   >
                     {t({ uz: 'Keyingisi', en: 'Next', ru: 'Далее' })}
@@ -192,10 +367,7 @@ export default function TheoryLessonPage() {
                   <motion.button
                     type="button"
                     whileTap={canDoQuiz ? { scale: 0.98 } : undefined}
-                    onClick={() => {
-                      if (!canDoQuiz) return;
-                      setPhase('quiz');
-                    }}
+                    onClick={nextRead}
                     disabled={!canDoQuiz}
                     className={clsx(
                       'w-full rounded-2xl py-4 text-base font-bold shadow-lg transition',
@@ -316,6 +488,12 @@ export default function TheoryLessonPage() {
                   />
                 ))}
               </span>
+            </div>
+            <div className="mb-4">
+              <LearnProgressBar
+                value={progressPct}
+                colorClassName="bg-blue-600 dark:bg-[var(--learn-blue)]"
+              />
             </div>
 
             <div className="relative mb-4 overflow-hidden rounded-3xl border-2 border-blue-200/80 bg-white p-4 shadow-md dark:border-[var(--learn-blue)]/35 dark:bg-[var(--learn-card)] dark:shadow-[0_0_40px_rgba(61,142,255,0.14)]">

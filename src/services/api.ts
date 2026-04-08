@@ -145,6 +145,13 @@ export type TheorySlide = {
   warn?: boolean;
 };
 
+export type MobileNazariyaSection = {
+  id: string;
+  title: string;
+  slides?: TheorySlide[] | null;
+  content: string;
+};
+
 export type MobileTheory = {
   id: string;
   levelId: string;
@@ -153,6 +160,7 @@ export type MobileTheory = {
   orderIndex: number;
   quizTheoryId: string;
   slides?: TheorySlide[] | null;
+  nazariyaSections?: MobileNazariyaSection[];
 };
 
 export type LeaderboardRow = {

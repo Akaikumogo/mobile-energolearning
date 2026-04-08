@@ -59,9 +59,9 @@ export default function LevelPage() {
       </h1>
       <p className="mb-6 text-sm text-slate-600 dark:text-slate-400">
         {t({
-          uz: 'Nazariyalarni ketma-ket o‘qing',
-          en: 'Study topics in order',
-          ru: 'Изучайте темы по порядку',
+          uz: 'Darslarni ketma-ket o‘qing',
+          en: 'Study lessons in order',
+          ru: 'Проходите уроки по порядку',
         })}
       </p>
 
