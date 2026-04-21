@@ -15,6 +15,7 @@ import LeaderboardPage from '@/pages/learn/LeaderboardPage';
 import LevelPage from '@/pages/learn/LevelPage';
 import TheoryLessonPage from '@/pages/learn/TheoryLessonPage';
 import QrPage from '@/pages/learn/QrPage';
+import AiAssistantPage from '@/pages/learn/AiAssistantPage';
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
               <Route path="/learn" element={<LearnLayout />}>
                 <Route index element={<LearnHomePage />} />
                 <Route path="rating" element={<LeaderboardPage />} />
+                <Route path="assistant" element={<AiAssistantPage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="qr" element={<QrPage />} />
                 <Route path="level/:levelId" element={<LevelPage />} />
