@@ -8,6 +8,7 @@ type ChatMessage = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  createdAt?: string;
 };
 
 const STARTER_PROMPTS = [
@@ -50,6 +51,22 @@ export default function AiAssistantPage() {
 
     socket.on('connect', () => setStatus('ready'));
     socket.on('assistant_ready', () => setStatus('ready'));
+    socket.on(
+      'assistant_history',
+      ({
+        messages: history,
+      }: {
+        messages?: Array<{
+          id: string;
+          role: 'user' | 'assistant';
+          content: string;
+          createdAt: string;
+        }>;
+      }) => {
+        if (!history?.length) return;
+        setMessages(history);
+      },
+    );
     socket.on('disconnect', () => setStatus('error'));
     socket.on('assistant_started', () => {
       setIsStreaming(true);
@@ -129,7 +146,7 @@ export default function AiAssistantPage() {
 
   return (
     <div className="flex min-h-full flex-col bg-gradient-to-b from-slate-100 via-white to-amber-50/40 dark:from-[var(--learn-bg)] dark:via-[var(--learn-surface)] dark:to-[#0f1726]">
-      <div className="border-b border-slate-200/80 px-4 py-4 dark:border-[var(--learn-border)]">
+      <div className="border-b border-slate-200/80 px-safe-4 py-4 dark:border-[var(--learn-border)]">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-500/20">
             <Bot className="h-5 w-5" />
@@ -169,7 +186,10 @@ export default function AiAssistantPage() {
         </div>
       </div>
 
-      <div ref={viewportRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+      <div
+        ref={viewportRef}
+        className="flex-1 space-y-3 overflow-y-auto px-safe-4 py-4"
+      >
         {messages.map((message) => (
           <div
             key={message.id}
@@ -215,7 +235,7 @@ export default function AiAssistantPage() {
         ) : null}
       </div>
 
-      <div className="border-t border-slate-200 bg-white/90 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/96">
+      <div className="border-t border-slate-200 bg-white/90 px-safe-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/96">
         <div className="flex items-end gap-2">
           <textarea
             value={draft}

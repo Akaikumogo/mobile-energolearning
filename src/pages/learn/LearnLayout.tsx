@@ -98,11 +98,11 @@ export default function LearnLayout() {
         <ThemeToggle />
       </header>
 
-      <main className="flex-1 overflow-y-auto pb-24">
+      <main className="flex-1 overflow-y-auto pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]">
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white/95 px-safe-4 pb-safe backdrop-blur dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/98 dark:backdrop-blur-md">
+      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white/95 px-safe-4 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] backdrop-blur dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/98 dark:backdrop-blur-md">
         <div className="mx-auto flex max-w-lg">
           <NavLink
             to="/learn"
