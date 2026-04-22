@@ -51,6 +51,7 @@ export default function AiAssistantPage() {
 
     socket.on('connect', () => setStatus('ready'));
     socket.on('assistant_ready', () => setStatus('ready'));
+    socket.on('connect_error', () => setStatus('error'));
     socket.on(
       'assistant_history',
       ({
@@ -163,10 +164,16 @@ export default function AiAssistantPage() {
                 'mt-2 inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold',
                 status === 'ready'
                   ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
-                  : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+                  : status === 'error'
+                    ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300'
+                    : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
               )}
             >
-              {status === 'ready' ? 'Ulandi' : 'Ulanmoqda'}
+              {status === 'ready'
+                ? 'Ulandi'
+                : status === 'error'
+                  ? 'Ulanmadi'
+                  : 'Ulanmoqda'}
             </p>
           </div>
         </div>
