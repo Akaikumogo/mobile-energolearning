@@ -71,6 +71,10 @@ export default function AudioLibraryPage() {
             <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-600/35 dark:bg-[#2d1218]/70 dark:text-rose-200">
               Kutubxona yuklashda xatolik.
             </div>
+          ) : books.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-[var(--learn-muted)]">
+              Hozircha audiokitoblar yo‘q. Administrator kontent qo‘shgandan keyin shu yerda chiqadi.
+            </div>
           ) : (
             books.map((book) => <BookCard key={book.id} book={book} />)
           )}

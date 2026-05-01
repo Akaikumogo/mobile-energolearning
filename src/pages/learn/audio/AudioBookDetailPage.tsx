@@ -70,6 +70,7 @@ export default function AudioBookDetailPage() {
   }
 
   const isThisBookActive = currentBookId === book.id;
+  const hasAnyAudio = flattenedBookQueue.length > 0;
 
   return (
     <div className="mx-auto max-w-lg space-y-5 px-safe-4 py-6">
@@ -108,9 +109,11 @@ export default function AudioBookDetailPage() {
             }
             playQueue(flattenedBookQueue, 0);
           }}
+          disabled={!hasAnyAudio}
           className={clsx(
             'mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-4 text-base font-bold shadow-sm ring-1 transition active:scale-[0.99]',
             'bg-amber-600 text-white ring-amber-200 dark:bg-[var(--learn-gold)] dark:text-black dark:ring-amber-600/35',
+            !hasAnyAudio && 'cursor-not-allowed opacity-60',
           )}
         >
           {isThisBookActive && isPlaying ? (
@@ -127,44 +130,50 @@ export default function AudioBookDetailPage() {
           Boblar
         </p>
         <div className="space-y-3">
-          {chapters.map((ch) => (
-            <ChapterAccordion
-              key={ch.id}
-              chapter={ch}
-              isActive={currentChapterId === ch.id}
-              activeParagraphId={currentParagraphId}
-              isPlaying={isPlaying && isThisBookActive}
-              onPlayChapter={() => {
-                if (currentChapterId === ch.id && isPlaying) {
-                  togglePlayPause();
-                  return;
-                }
-                const items: AudioQueueItem[] = [...ch.paragraphs]
-                  .sort((a, b) => a.order - b.order)
-                  .map((p) => ({
-                    bookId: book.id,
-                    bookTitle: book.title,
-                    chapterId: ch.id,
-                    chapterTitle: ch.title,
-                    paragraphId: p.id,
-                    text: p.text,
-                    audioUrl: p.audioUrl,
-                  }));
-                playQueue(items, 0);
-              }}
-              onPlayParagraph={(pid) => {
-                if (currentParagraphId === pid && isPlaying) {
-                  togglePlayPause();
-                  return;
-                }
-                const startIndex = Math.max(
-                  0,
-                  flattenedBookQueue.findIndex((x) => x.paragraphId === pid),
-                );
-                playQueue(flattenedBookQueue, startIndex);
-              }}
-            />
-          ))}
+          {chapters.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-[var(--learn-muted)]">
+              Hozircha bu kitobda boblar yo‘q.
+            </div>
+          ) : (
+            chapters.map((ch) => (
+              <ChapterAccordion
+                key={ch.id}
+                chapter={ch}
+                isActive={currentChapterId === ch.id}
+                activeParagraphId={currentParagraphId}
+                isPlaying={isPlaying && isThisBookActive}
+                onPlayChapter={() => {
+                  if (currentChapterId === ch.id && isPlaying) {
+                    togglePlayPause();
+                    return;
+                  }
+                  const items: AudioQueueItem[] = [...ch.paragraphs]
+                    .sort((a, b) => a.order - b.order)
+                    .map((p) => ({
+                      bookId: book.id,
+                      bookTitle: book.title,
+                      chapterId: ch.id,
+                      chapterTitle: ch.title,
+                      paragraphId: p.id,
+                      text: p.text,
+                      audioUrl: p.audioUrl,
+                    }));
+                  playQueue(items, 0);
+                }}
+                onPlayParagraph={(pid) => {
+                  if (currentParagraphId === pid && isPlaying) {
+                    togglePlayPause();
+                    return;
+                  }
+                  const startIndex = Math.max(
+                    0,
+                    flattenedBookQueue.findIndex((x) => x.paragraphId === pid),
+                  );
+                  playQueue(flattenedBookQueue, startIndex);
+                }}
+              />
+            ))
+          )}
         </div>
       </div>
 
