@@ -6,6 +6,11 @@ const API_BASE_URL =
 
 export const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
 
+/** WebSocket + Socket.IO base (global prefix `/api` is HTTP-only). */
+export function getExamLiveSocketUrl(): string {
+  return BACKEND_ORIGIN;
+}
+
 export type Role = 'SUPERADMIN' | 'MODERATOR' | 'USER';
 
 export type UserProfile = {
@@ -91,6 +96,83 @@ export type MatchingPair = {
   rightOptionId: string;
 };
 
+export type ExamQuestionSection = 'PT' | 'TB';
+
+export type ExamLiveValidateQrResponse = {
+  sessionId: string;
+  assignmentId: string;
+  status: string;
+  includesPt: boolean;
+  includesTb: boolean;
+  examTitle: string | null;
+};
+
+export type ExamLiveEmployeeState = {
+  status: string;
+  includesPt: boolean;
+  includesTb: boolean;
+  ptCompleted: boolean;
+  tbCompleted: boolean;
+  activeSection: ExamQuestionSection | null;
+  rejectionReason: string | null;
+  attemptId: string | null;
+  ptScorePercent: number | null;
+  tbScorePercent: number | null;
+  oralPending: boolean;
+};
+
+export type ExamLiveQuestion = {
+  orderIndex: number;
+  id: string;
+  prompt: string;
+  type: string;
+  options: Array<{ id: string; optionText: string; orderIndex: number }>;
+};
+
+export type ExamLiveStartSectionResponse = {
+  section: ExamQuestionSection;
+  questions: ExamLiveQuestion[];
+  durationMinutes: number;
+  pointsPerQuestion: number;
+};
+
+export type ExamLiveSubmitSectionResponse = {
+  section: ExamQuestionSection;
+  correctCount: number;
+  totalQuestions: number;
+  score: number;
+  maxScore: number;
+  percent: number;
+  passed: boolean;
+  passThreshold: number;
+  awaitingOral: boolean;
+};
+
+export type ExamLiveHistoryRow = {
+  id: string;
+  createdAt: string;
+  examTitle: string | null;
+  examType: string | null;
+  extraReason: string | null;
+  includesPt: boolean;
+  includesTb: boolean;
+  ptScorePercent: number | null;
+  tbScorePercent: number | null;
+  scorePercent: number | null;
+  oralResult: string | null;
+  oralFeedback: string | null;
+  finalizedAt: string | null;
+};
+
+export type ExamLiveNextResponse = {
+  next: null | {
+    assignmentId: string;
+    suggestedAt: string;
+    scheduledAt: string | null;
+    daysLeft: number;
+  };
+};
+
 export type TheorySlide = {
   head: string;
   items: string[];
@@ -168,6 +250,39 @@ export type EmployeeCheck = {
   createdByUserId: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+// ─── Audio Library (Mobile) ────────────────────────────────────────────────
+export type AudioBookSummary = {
+  id: string;
+  title: string;
+  coverUrl?: string | null;
+  description?: string | null;
+  chaptersCount: number;
+};
+
+export type AudioParagraph = {
+  id: string;
+  text: string;
+  order: number;
+  chapterId: string;
+  audioUrl: string;
+};
+
+export type AudioChapter = {
+  id: string;
+  title: string;
+  order: number;
+  bookId: string;
+  paragraphs: AudioParagraph[];
+};
+
+export type AudioBookDetail = {
+  id: string;
+  title: string;
+  coverUrl?: string | null;
+  description?: string | null;
+  chapters: AudioChapter[];
 };
 
 class MobileApiService {
@@ -364,6 +479,16 @@ class MobileApiService {
     return response.data;
   }
 
+  async listAudioBooks(): Promise<AudioBookSummary[]> {
+    const response = await this.api.get<AudioBookSummary[]>('/audio-books');
+    return response.data;
+  }
+
+  async getAudioBook(bookId: string): Promise<AudioBookDetail> {
+    const response = await this.api.get<AudioBookDetail>(`/audio-books/${bookId}`);
+    return response.data;
+  }
+
   async submitAnswer(questionId: string, selectedOptionId: string) {
     const response = await this.api.post<{
       isCorrect: boolean;
@@ -390,6 +515,75 @@ class MobileApiService {
 
   async listMyChecks(params?: { type?: EmployeeCheckType }): Promise<EmployeeCheck[]> {
     const response = await this.api.get<EmployeeCheck[]>('/auth/me/checks', { params });
+    return response.data;
+  }
+
+  // ─── Exam Live (USER) ─────────────────────────────────────────────────────
+  async examLiveValidateQr(qrToken: string): Promise<ExamLiveValidateQrResponse> {
+    const response = await this.api.post<ExamLiveValidateQrResponse>(
+      '/exams/live/validate-qr',
+      { qrToken },
+    );
+    return response.data;
+  }
+
+  async examLiveGetSessionState(sessionId: string): Promise<ExamLiveEmployeeState> {
+    const response = await this.api.get<ExamLiveEmployeeState>(
+      `/exams/live/session/${sessionId}/state`,
+    );
+    return response.data;
+  }
+
+  async examLiveVerifyCode(sessionId: string, code: string) {
+    const response = await this.api.post<{ ok: boolean }>(
+      `/exams/live/session/${sessionId}/verify-code`,
+      { code },
+    );
+    return response.data;
+  }
+
+  async examLiveStartSection(sessionId: string, section: ExamQuestionSection) {
+    const response = await this.api.post<ExamLiveStartSectionResponse>(
+      `/exams/live/session/${sessionId}/start-section`,
+      { section },
+    );
+    return response.data;
+  }
+
+  async examLiveAnswer(
+    sessionId: string,
+    body: { section: ExamQuestionSection; questionId: string; selectedOptionId: string },
+  ) {
+    const response = await this.api.post<{ ok: boolean; isCorrect: boolean }>(
+      `/exams/live/session/${sessionId}/answer`,
+      body,
+    );
+    return response.data;
+  }
+
+  async examLiveSubmitSection(sessionId: string, section: ExamQuestionSection) {
+    const response = await this.api.post<ExamLiveSubmitSectionResponse>(
+      `/exams/live/session/${sessionId}/submit-section`,
+      { section },
+    );
+    return response.data;
+  }
+
+  async examLiveTabSwitch(sessionId: string) {
+    const response = await this.api.post<{ tabSwitchCount: number; cancelled?: boolean }>(
+      `/exams/live/session/${sessionId}/tab-switch`,
+      {},
+    );
+    return response.data;
+  }
+
+  async examLiveMyNext(): Promise<ExamLiveNextResponse> {
+    const response = await this.api.get<ExamLiveNextResponse>('/exams/live/me/next');
+    return response.data;
+  }
+
+  async examLiveMyHistory(): Promise<ExamLiveHistoryRow[]> {
+    const response = await this.api.get<ExamLiveHistoryRow[]>('/exams/live/me/history');
     return response.data;
   }
 }

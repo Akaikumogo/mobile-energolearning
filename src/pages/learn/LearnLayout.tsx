@@ -6,7 +6,7 @@ import {
   Heart,
   HeartCrack,
   Home,
-  QrCode,
+  LibraryBig,
   Trophy,
   User,
 } from 'lucide-react';
@@ -19,6 +19,7 @@ import {
   needsOrganizationSelection,
 } from '@/utils/auth';
 import clsx from 'clsx';
+import MiniPlayer from './audio/components/MiniPlayer';
 
 export default function LearnLayout() {
   const { t } = useTranslation();
@@ -98,9 +99,11 @@ export default function LearnLayout() {
         <ThemeToggle />
       </header>
 
-      <main className="flex-1 overflow-y-auto pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]">
+      <main className="flex-1 overflow-y-auto pb-[calc(10.5rem+env(safe-area-inset-bottom,0px))]">
         <Outlet />
       </main>
+
+      <MiniPlayer />
 
       <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white/95 px-safe-4 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] backdrop-blur dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/98 dark:backdrop-blur-md">
         <div className="mx-auto flex max-w-lg">
@@ -120,7 +123,7 @@ export default function LearnLayout() {
             {t({ uz: 'Bosh sahifa', en: 'Home', ru: 'Главная' })}
           </NavLink>
           <NavLink
-            to="/learn/qr"
+            to="/learn/library"
             className={({ isActive }) =>
               clsx(
                 'flex min-w-0 flex-1 flex-col items-center gap-1 py-3 text-[10px] font-medium sm:text-xs',
@@ -130,8 +133,8 @@ export default function LearnLayout() {
               )
             }
           >
-            <QrCode className="h-5 w-5 shrink-0" />
-            {t({ uz: 'QR', en: 'QR', ru: 'QR' })}
+            <LibraryBig className="h-5 w-5 shrink-0" />
+            {t({ uz: 'Kutubxona', en: 'Library', ru: 'Библиотека' })}
           </NavLink>
           <NavLink
             to="/learn/rating"
