@@ -13,7 +13,7 @@ function formatTime(seconds: number) {
 
 export default function MiniPlayer() {
   const {
-    currentBookId,
+    // currentBookId,
     currentParagraphId,
     isPlaying,
     progressSeconds,
@@ -22,25 +22,26 @@ export default function MiniPlayer() {
     skipNext,
     skipPrev,
     seek,
-    queue,
+    queue
   } = useAudioPlayer();
 
   const canShow = !!currentParagraphId && !!queue.length;
   if (!canShow) return null;
 
-  const currentItem = queue.find((q) => q.paragraphId === currentParagraphId) ?? null;
+  const currentItem =
+    queue.find((q) => q.paragraphId === currentParagraphId) ?? null;
 
   return (
     <div
       className={clsx(
         'fixed left-0 right-0 z-30 px-safe-4',
-        'bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))]',
+        'bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))]'
       )}
     >
       <div
         className={clsx(
           'mx-auto flex max-w-lg items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur',
-          'dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/95',
+          'dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/95'
         )}
       >
         <div className="min-w-0 flex-1">
@@ -82,7 +83,11 @@ export default function MiniPlayer() {
             className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-600 text-white shadow-sm ring-1 ring-amber-200 active:scale-[0.98] dark:bg-[var(--learn-gold)] dark:text-black dark:ring-amber-600/35"
             title={isPlaying ? 'Pause' : 'Play'}
           >
-            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+            {isPlaying ? (
+              <Pause className="h-5 w-5" />
+            ) : (
+              <Play className="h-5 w-5" />
+            )}
           </button>
           <button
             type="button"
