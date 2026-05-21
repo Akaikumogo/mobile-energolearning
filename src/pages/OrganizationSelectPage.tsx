@@ -44,9 +44,9 @@ export default function OrganizationSelectPage() {
       <div className="min-h-dvh bg-slate-50 px-safe-6 pb-safe pt-safe-16 dark:bg-slate-950">
         <p className="mt-12 text-center text-slate-600 dark:text-slate-400">
           {t({
-            uz: 'Bu qadam faqat o‘quvchilar uchun.',
-            en: 'This step is for learners only.',
-            ru: 'Этот шаг только для учащихся.',
+            uz: 'Bu qadam faqat xodimlar uchun.',
+            en: 'This step is for employees only.',
+            ru: 'Этот шаг только для сотрудников.',
           })}
         </p>
         <button
