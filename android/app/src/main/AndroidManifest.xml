@@ -7,6 +7,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
         android:theme="@style/AppTheme">
 
         <activity
@@ -36,6 +37,12 @@
     </application>
 
     <!-- Permissions -->
-
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Audio background playback uchun: WAKE_LOCK CPU ni ushlab turadi
+         (uxlash holatida ham audio davom etishi uchun). -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Android 13+ media notificationlari uchun. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Network state (offline indikatorlari va so'rovlarni qaytarish uchun). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 </manifest>

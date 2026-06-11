@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useDevMode } from '@/hooks/useDevMode';
 import mobileApi from '@/services/api';
 import type { MobileNazariyaSection, MobileQuestion, MatchingPair } from '@/services/api';
 import { queryClient } from '@/queryClient';
@@ -30,6 +31,7 @@ export default function TheoryLessonPage() {
     theoryId: string;
   }>();
   const { t } = useTranslation();
+  const devMode = useDevMode();
   const navigate = useNavigate();
   const [phase, setPhase] = useState<'read' | 'quiz' | 'done'>('read');
   const [readStep, setReadStep] = useState(0);
@@ -58,7 +60,7 @@ export default function TheoryLessonPage() {
     return { cnt, empty: Math.max(0, heartsMax - cnt) };
   }, [heartsCount, heartsMax]);
 
-  const canDoQuiz = heartsCount > 0;
+  const canDoQuiz = devMode || heartsCount > 0;
 
   const theoryQuery = useQuery({
     queryKey: ['theory', theoryId],
@@ -728,17 +730,17 @@ export default function TheoryLessonPage() {
                     <button
                       type="button"
                       disabled={
-                        !feedback ||
+                        (!feedback && !devMode) ||
                         matchingMut.isPending ||
                         answerMut.isPending
                       }
                       onClick={() => {
-                        if (!feedback) return;
+                        if (!feedback && !devMode) return;
                         nextQuestion();
                       }}
                       className={clsx(
                         'w-full rounded-2xl py-3.5 text-base font-bold shadow-md transition',
-                        feedback && !matchingMut.isPending
+                        (feedback || devMode) && !matchingMut.isPending
                           ? 'bg-slate-800 text-white dark:bg-[var(--learn-surface)] dark:ring-1 dark:ring-[var(--learn-border)]'
                           : 'cursor-not-allowed bg-slate-300 text-slate-600 dark:bg-[var(--learn-card)] dark:text-[var(--learn-muted)]',
                       )}
@@ -850,6 +852,17 @@ export default function TheoryLessonPage() {
               </div>
             )}
 
+            {devMode && !feedback && question?.type !== 'MATCHING' && (
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.98 }}
+                onClick={() => nextQuestion()}
+                className="mt-3 w-full rounded-2xl bg-slate-800 py-3.5 text-base font-bold text-white shadow-md dark:bg-[var(--learn-surface)] dark:ring-1 dark:ring-[var(--learn-border)]"
+              >
+                {t({ uz: 'Keyingisi', en: 'Next', ru: 'Далее' })}
+              </motion.button>
+            )}
+
             {feedback && (
               <motion.div
                 initial={{ opacity: 0, y: 10, scale: 0.98 }}
@@ -878,7 +891,7 @@ export default function TheoryLessonPage() {
                   type="button"
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
-                    if (feedback === 'wrong' && outOfLives) {
+                    if (feedback === 'wrong' && outOfLives && !devMode) {
                       navigate('/learn', { replace: true });
                       return;
                     }
@@ -891,11 +904,11 @@ export default function TheoryLessonPage() {
                       : 'bg-rose-600 text-white dark:bg-[var(--learn-red)] dark:shadow-[0_6px_20px_rgba(255,71,87,0.25)]',
                   )}
                 >
-                  {feedback === 'wrong' && outOfLives
+                  {feedback === 'wrong' && outOfLives && !devMode
                     ? t({ uz: 'Bosh menyu', en: 'Main menu', ru: 'Главное меню' })
                     : t({ uz: 'Keyingisi', en: 'Next', ru: 'Далее' })}
                 </motion.button>
-                {feedback === 'wrong' && outOfLives ? (
+                {feedback === 'wrong' && outOfLives && !devMode ? (
                   <div className="mt-3 flex items-center justify-center gap-2 text-sm text-rose-700/80 dark:text-rose-200/80">
                     <Home className="h-4 w-4" />
                     <span>

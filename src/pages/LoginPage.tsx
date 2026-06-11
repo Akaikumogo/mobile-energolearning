@@ -14,12 +14,12 @@ function cacheUser(user: UserProfile) {
 export default function LoginPage() {
   const { t, lang, setLang } = useTranslation();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [loginOrEmail, setLoginOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const loginMut = useMutation({
-    mutationFn: () => mobileApi.login(email.trim(), password),
+    mutationFn: () => mobileApi.login(loginOrEmail.trim(), password),
     onSuccess: (res) => {
       cacheUser(res.data.user);
       const u = res.data.user;
@@ -96,16 +96,36 @@ export default function LoginPage() {
           )}
           <label className="mb-4 block">
             <span className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
-              Email
+              {t({
+                uz: 'Login yoki Email',
+                en: 'Login or Email',
+                ru: 'Логин или Email',
+              })}
             </span>
             <input
-              type="email"
-              autoComplete="email"
+              type="text"
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="email"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={loginOrEmail}
+              onChange={(e) => setLoginOrEmail(e.target.value)}
+              placeholder={t({
+                uz: 'ali.123.met yoki user@mail.com',
+                en: 'login or user@mail.com',
+                ru: 'логин или user@mail.com',
+              })}
               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none ring-blue-500 focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             />
+            <span className="mt-1 block text-[11px] text-slate-500 dark:text-slate-400">
+              {t({
+                uz: '1C dan sync qilinganlar uchun login va parol kompaniyangizdan beriladi.',
+                en: '1C-synced users receive a login and password from their company.',
+                ru: 'Для пользователей, синхронизированных из 1С, логин и пароль выдаёт компания.',
+              })}
+            </span>
           </label>
           <label className="mb-6 block">
             <span className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">

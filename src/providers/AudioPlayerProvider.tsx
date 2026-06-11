@@ -9,7 +9,10 @@ import {
   type ReactNode,
 } from 'react';
 import type { LastListened } from '@/pages/learn/audio/types';
-import mobileApi, { type AudioBookDetail } from '@/services/api';
+import mobileApi, {
+  resolveMediaUrl,
+  type AudioBookDetail,
+} from '@/services/api';
 
 export type AudioQueueItem = {
   bookId: string;
@@ -33,7 +36,11 @@ type AudioPlayerState = {
 };
 
 type AudioPlayerActions = {
-  playQueue: (items: AudioQueueItem[], startIndex?: number, startSeekSeconds?: number) => void;
+  playQueue: (
+    items: AudioQueueItem[],
+    startIndex?: number,
+    startSeekSeconds?: number,
+  ) => void;
   togglePlayPause: () => void;
   pause: () => void;
   resume: () => void;
@@ -47,6 +54,7 @@ type AudioPlayerActions = {
 type AudioPlayerContextValue = AudioPlayerState & AudioPlayerActions;
 
 const AUDIO_LAST_LISTENED_KEY = 'electrolearn.audio.lastListened.v1';
+const AUDIO_QUEUE_STATE_KEY = 'electrolearn.audio.queueState.v1';
 
 function safeJsonParse<T>(value: string | null): T | null {
   if (!value) return null;
@@ -106,9 +114,18 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const currentChapterId = current?.chapterId ?? null;
   const currentParagraphId = current?.paragraphId ?? null;
 
+  // ─── HTMLAudioElement singleton ────────────────────────────────────────
+  // `playsInline` + `preload="auto"` Android WebView va iOS Safari uchun zarur.
+  // Background ishlashi uchun audio elementni DOM ga qo'shamiz (body) — bu shart
+  // emas, lekin ba'zi browserlarda detached elementlar audio focusni ushlab tura
+  // olmaydi. Document hayot davomida bitta singleton ishlatamiz.
   if (!audioRef.current && typeof window !== 'undefined') {
-    audioRef.current = new Audio();
-    audioRef.current.preload = 'metadata';
+    const a = new Audio();
+    a.preload = 'auto';
+    a.crossOrigin = 'anonymous';
+    // @ts-expect-error: playsInline DOM attribute available on HTMLMediaElement in modern browsers.
+    a.playsInline = true;
+    audioRef.current = a;
   }
 
   const loadQueueIndex = useCallback(
@@ -117,11 +134,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       const item = queue[index];
       if (!audio || !item) return;
 
-      // Reset basic playback info early to reduce UI lag.
       setProgressSeconds(0);
       setDurationSeconds(0);
 
-      audio.src = item.audioUrl;
+      audio.src = resolveMediaUrl(item.audioUrl);
       audio.load();
 
       if (opts?.autoplay !== false) {
@@ -129,7 +145,6 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
           await audio.play();
           setIsPlaying(true);
         } catch {
-          // Autoplay can be blocked in some browsers.
           setIsPlaying(false);
         }
       }
@@ -150,12 +165,25 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  // Whenever queue changes (or start index changes), load that item into the audio element.
   useEffect(() => {
     if (!queue.length) return;
     void loadQueueIndex(queueIndex, { autoplay: true });
   }, [queue, queueIndex, loadQueueIndex]);
 
+  // ─── Persist minimal queue snapshot (last item + index) ────────────────
+  useEffect(() => {
+    if (!queue.length) return;
+    try {
+      localStorage.setItem(
+        AUDIO_QUEUE_STATE_KEY,
+        JSON.stringify({ queueIndex, bookId: queue[0].bookId }),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [queue, queueIndex]);
+
+  // ─── Audio element event wiring ────────────────────────────────────────
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -164,7 +192,6 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       const t = audio.currentTime || 0;
       setProgressSeconds(t);
 
-      // Persist "last listened" throttled (once per ~2s).
       const now = Date.now();
       if (!current || now - lastPersistAtRef.current < 2000) return;
       lastPersistAtRef.current = now;
@@ -209,7 +236,6 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       setQueueIndex((i) => {
         const next = i + 1;
         if (next >= queue.length) {
-          // Queue finished: stop and hide mini-player until user starts again.
           setQueue([]);
           return 0;
         }
@@ -231,6 +257,143 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener('ended', onEnded);
     };
   }, [queue, current]);
+
+  // ─── Media Session API (lockscreen / notification controls) ────────────
+  // Android (Chrome/WebView) va iOS Safari MediaSession metadata orqali
+  // tizim notification panelida boshqaruv tugmalarini ko'rsatadi va audio
+  // ekran o'chgan paytda ham davom etadi.
+  const togglePlayPauseRef = useRef<() => void>(() => {});
+  const skipNextRef = useRef<() => void>(() => {});
+  const skipPrevRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+    if (!current) {
+      try {
+        navigator.mediaSession.metadata = null;
+        navigator.mediaSession.playbackState = 'none';
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: current.text || 'Audiokitob',
+        artist: current.chapterTitle || '',
+        album: current.bookTitle || 'ElektroLearn',
+        artwork: [
+          {
+            src: '/favicon.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml',
+          },
+        ],
+      });
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    } catch {
+      /* ignore — eski browserlarda MediaMetadata konstruktor mavjud emas */
+    }
+
+    const setHandler = (
+      action: MediaSessionAction,
+      handler: MediaSessionActionHandler | null,
+    ) => {
+      try {
+        navigator.mediaSession.setActionHandler(action, handler);
+      } catch {
+        /* ignore — ba'zi actionlar qo'llab-quvvatlanmasligi mumkin */
+      }
+    };
+
+    setHandler('play', () => togglePlayPauseRef.current());
+    setHandler('pause', () => togglePlayPauseRef.current());
+    setHandler('nexttrack', () => skipNextRef.current());
+    setHandler('previoustrack', () => skipPrevRef.current());
+    setHandler('seekbackward', () => {
+      const a = audioRef.current;
+      if (!a) return;
+      try {
+        a.currentTime = Math.max(0, (a.currentTime || 0) - 10);
+      } catch {
+        /* ignore */
+      }
+    });
+    setHandler('seekforward', () => {
+      const a = audioRef.current;
+      if (!a) return;
+      try {
+        a.currentTime = Math.min(a.duration || 0, (a.currentTime || 0) + 10);
+      } catch {
+        /* ignore */
+      }
+    });
+    setHandler('seekto', (details: MediaSessionActionDetails) => {
+      const a = audioRef.current;
+      if (!a) return;
+      const seek = details.seekTime;
+      if (typeof seek === 'number') {
+        try {
+          a.currentTime = seek;
+        } catch {
+          /* ignore */
+        }
+      }
+    });
+    setHandler('stop', () => {
+      const a = audioRef.current;
+      if (!a) return;
+      a.pause();
+      setIsPlaying(false);
+    });
+
+    return () => {
+      const actions: MediaSessionAction[] = [
+        'play',
+        'pause',
+        'nexttrack',
+        'previoustrack',
+        'seekbackward',
+        'seekforward',
+        'seekto',
+        'stop',
+      ];
+      for (const a of actions) setHandler(a, null);
+    };
+  }, [current, isPlaying]);
+
+  // ─── Position state for system seek bar ────────────────────────────────
+  useEffect(() => {
+    if (
+      typeof navigator === 'undefined' ||
+      !('mediaSession' in navigator) ||
+      !current
+    ) {
+      return;
+    }
+    if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return;
+    try {
+      navigator.mediaSession.setPositionState?.({
+        duration: durationSeconds,
+        playbackRate: audioRef.current?.playbackRate ?? 1,
+        position: Math.min(progressSeconds, durationSeconds),
+      });
+    } catch {
+      /* ignore */
+    }
+  }, [progressSeconds, durationSeconds, current]);
+
+  // ─── Page visibility: WebView/PWA o'rtani bossa, audio davom etishi kerak ─
+  // visibilitychange da AVTOMATIK pause QILMAYMIZ — bu eng asosiy nuqta. Audio
+  // tag o'zi tizim audio focusiga ega, biz hech narsa qilmasligimiz kerak.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const handler = () => {
+      // hech nima qilmaymiz — audio tabga emas, document hayot doirasiga bog'liq
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, []);
 
   const togglePlayPause = useCallback(() => {
     const audio = audioRef.current;
@@ -275,6 +438,13 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     setQueueIndex((i) => Math.max(0, i - 1));
   }, []);
 
+  // MediaSession handlerlari hozirgi callbacklarni doim ushlab tursin
+  useEffect(() => {
+    togglePlayPauseRef.current = togglePlayPause;
+    skipNextRef.current = skipNext;
+    skipPrevRef.current = skipPrev;
+  }, [togglePlayPause, skipNext, skipPrev]);
+
   const getLastListened = useCallback(() => readLastListened(), []);
 
   const resumeLastListened = useCallback(() => {
@@ -290,7 +460,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       );
       playQueue(items, startIndex, Math.max(0, last.positionSeconds || 0));
     })();
-  }, []);
+  }, [playQueue]);
 
   const value = useMemo<AudioPlayerContextValue>(
     () => ({
@@ -333,7 +503,11 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     ],
   );
 
-  return <AudioPlayerContext.Provider value={value}>{children}</AudioPlayerContext.Provider>;
+  return (
+    <AudioPlayerContext.Provider value={value}>
+      {children}
+    </AudioPlayerContext.Provider>
+  );
 }
 
 export function useAudioPlayer() {

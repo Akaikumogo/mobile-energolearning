@@ -11,6 +11,21 @@ export function getExamLiveSocketUrl(): string {
   return BACKEND_ORIGIN;
 }
 
+/**
+ * Backend `/uploads/...` kabi nisbiy URL qaytarishi mumkin (audioUrl, coverUrl).
+ * Mobile (Capacitor WebView) hostda http://localhost ishlatiladi shu sababli
+ * media manbalarni har doim absolyut URL ga aylantiramiz.
+ */
+export function resolveMediaUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (/^(https?:|data:|blob:)/i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith('//')) return `https:${trimmed}`;
+  if (trimmed.startsWith('/')) return `${BACKEND_ORIGIN}${trimmed}`;
+  return `${BACKEND_ORIGIN}/${trimmed}`;
+}
+
 export type Role = 'SUPERADMIN' | 'MODERATOR' | 'USER';
 
 export type UserProfile = {
@@ -293,6 +308,7 @@ class MobileApiService {
   constructor() {
     this.api = axios.create({
       baseURL: API_BASE_URL,
+      timeout: 900000,
       headers: { 'Content-Type': 'application/json' }
     });
 
@@ -360,9 +376,12 @@ class MobileApiService {
     return this.refreshPromise;
   }
 
-  async login(email: string, password: string): Promise<LoginResponse> {
+  async login(loginOrEmail: string, password: string): Promise<LoginResponse> {
+    // Backend `login` ham `email` ham qabul qiladi (NES 1C dan sync qilingan
+    // foydalanuvchilarning logini email ustunida saqlanadi).
     const response = await this.api.post<LoginResponse>('/auth/login', {
-      email,
+      login: loginOrEmail,
+      email: loginOrEmail,
       password
     });
     const payload = response.data;
@@ -485,7 +504,9 @@ class MobileApiService {
   }
 
   async getAudioBook(bookId: string): Promise<AudioBookDetail> {
-    const response = await this.api.get<AudioBookDetail>(`/audio-books/${bookId}`);
+    const response = await this.api.get<AudioBookDetail>(
+      `/audio-books/${bookId}`
+    );
     return response.data;
   }
 
@@ -508,28 +529,36 @@ class MobileApiService {
 
   async getMyEmployeeCertificate(): Promise<EmployeeCertificate | null> {
     const response = await this.api.get<EmployeeCertificate | null>(
-      '/auth/me/employee-certificate',
+      '/auth/me/employee-certificate'
     );
     return response.data;
   }
 
-  async listMyChecks(params?: { type?: EmployeeCheckType }): Promise<EmployeeCheck[]> {
-    const response = await this.api.get<EmployeeCheck[]>('/auth/me/checks', { params });
+  async listMyChecks(params?: {
+    type?: EmployeeCheckType;
+  }): Promise<EmployeeCheck[]> {
+    const response = await this.api.get<EmployeeCheck[]>('/auth/me/checks', {
+      params
+    });
     return response.data;
   }
 
   // ─── Exam Live (USER) ─────────────────────────────────────────────────────
-  async examLiveValidateQr(qrToken: string): Promise<ExamLiveValidateQrResponse> {
+  async examLiveValidateQr(
+    qrToken: string
+  ): Promise<ExamLiveValidateQrResponse> {
     const response = await this.api.post<ExamLiveValidateQrResponse>(
       '/exams/live/validate-qr',
-      { qrToken },
+      { qrToken }
     );
     return response.data;
   }
 
-  async examLiveGetSessionState(sessionId: string): Promise<ExamLiveEmployeeState> {
+  async examLiveGetSessionState(
+    sessionId: string
+  ): Promise<ExamLiveEmployeeState> {
     const response = await this.api.get<ExamLiveEmployeeState>(
-      `/exams/live/session/${sessionId}/state`,
+      `/exams/live/session/${sessionId}/state`
     );
     return response.data;
   }
@@ -537,7 +566,7 @@ class MobileApiService {
   async examLiveVerifyCode(sessionId: string, code: string) {
     const response = await this.api.post<{ ok: boolean }>(
       `/exams/live/session/${sessionId}/verify-code`,
-      { code },
+      { code }
     );
     return response.data;
   }
@@ -545,18 +574,22 @@ class MobileApiService {
   async examLiveStartSection(sessionId: string, section: ExamQuestionSection) {
     const response = await this.api.post<ExamLiveStartSectionResponse>(
       `/exams/live/session/${sessionId}/start-section`,
-      { section },
+      { section }
     );
     return response.data;
   }
 
   async examLiveAnswer(
     sessionId: string,
-    body: { section: ExamQuestionSection; questionId: string; selectedOptionId: string },
+    body: {
+      section: ExamQuestionSection;
+      questionId: string;
+      selectedOptionId: string;
+    }
   ) {
     const response = await this.api.post<{ ok: boolean; isCorrect: boolean }>(
       `/exams/live/session/${sessionId}/answer`,
-      body,
+      body
     );
     return response.data;
   }
@@ -564,26 +597,30 @@ class MobileApiService {
   async examLiveSubmitSection(sessionId: string, section: ExamQuestionSection) {
     const response = await this.api.post<ExamLiveSubmitSectionResponse>(
       `/exams/live/session/${sessionId}/submit-section`,
-      { section },
+      { section }
     );
     return response.data;
   }
 
   async examLiveTabSwitch(sessionId: string) {
-    const response = await this.api.post<{ tabSwitchCount: number; cancelled?: boolean }>(
-      `/exams/live/session/${sessionId}/tab-switch`,
-      {},
-    );
+    const response = await this.api.post<{
+      tabSwitchCount: number;
+      cancelled?: boolean;
+    }>(`/exams/live/session/${sessionId}/tab-switch`, {});
     return response.data;
   }
 
   async examLiveMyNext(): Promise<ExamLiveNextResponse> {
-    const response = await this.api.get<ExamLiveNextResponse>('/exams/live/me/next');
+    const response = await this.api.get<ExamLiveNextResponse>(
+      '/exams/live/me/next'
+    );
     return response.data;
   }
 
   async examLiveMyHistory(): Promise<ExamLiveHistoryRow[]> {
-    const response = await this.api.get<ExamLiveHistoryRow[]>('/exams/live/me/history');
+    const response = await this.api.get<ExamLiveHistoryRow[]>(
+      '/exams/live/me/history'
+    );
     return response.data;
   }
 }
