@@ -41,6 +41,7 @@ type AudioPlayerActions = {
     startIndex?: number,
     startSeekSeconds?: number,
   ) => void;
+  playBook: (book: { id: string; title: string; audioUrl: string }, seekSeconds?: number) => void;
   togglePlayPause: () => void;
   pause: () => void;
   resume: () => void;
@@ -77,6 +78,19 @@ function writeLastListened(value: LastListened) {
 }
 
 function flattenBook(book: AudioBookDetail): AudioQueueItem[] {
+  // Flat book: direct audioUrl on the book
+  if (book.audioUrl) {
+    return [{
+      bookId: book.id,
+      bookTitle: book.title,
+      chapterId: book.id,
+      chapterTitle: '',
+      paragraphId: book.id,
+      text: book.title,
+      audioUrl: book.audioUrl,
+    }];
+  }
+  // Legacy: chapter → paragraph hierarchy
   const chapters = [...book.chapters].sort((a, b) => a.order - b.order);
   const items: AudioQueueItem[] = [];
   for (const ch of chapters) {
@@ -163,6 +177,25 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       }
     },
     [],
+  );
+
+  const playBook = useCallback(
+    (book: { id: string; title: string; audioUrl: string }, seekSeconds?: number) => {
+      playQueue(
+        [{
+          bookId: book.id,
+          bookTitle: book.title,
+          chapterId: book.id,
+          chapterTitle: '',
+          paragraphId: book.id,
+          text: book.title,
+          audioUrl: book.audioUrl,
+        }],
+        0,
+        seekSeconds,
+      );
+    },
+    [playQueue],
   );
 
   useEffect(() => {
@@ -473,6 +506,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       progressSeconds,
       durationSeconds,
       playQueue,
+      playBook,
       togglePlayPause,
       pause,
       resume,
@@ -492,6 +526,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       progressSeconds,
       durationSeconds,
       playQueue,
+      playBook,
       togglePlayPause,
       pause,
       resume,

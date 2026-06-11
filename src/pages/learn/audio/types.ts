@@ -2,6 +2,7 @@ export type AudioBookSummary = {
   id: string;
   title: string;
   coverUrl?: string | null;
+  audioUrl?: string | null;
   description?: string | null;
   chaptersCount: number;
 };
@@ -10,6 +11,7 @@ export type AudioBookDetail = {
   id: string;
   title: string;
   coverUrl?: string | null;
+  audioUrl?: string | null;
   description?: string | null;
   chapters: AudioChapter[];
 };

@@ -296,6 +296,7 @@ export type AudioBookDetail = {
   id: string;
   title: string;
   coverUrl?: string | null;
+  audioUrl?: string | null;
   description?: string | null;
   chapters: AudioChapter[];
 };
