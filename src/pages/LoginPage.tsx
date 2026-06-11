@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -74,16 +74,9 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="mb-1 text-2xl font-bold text-white">
+        <h1 className="mb-8 text-2xl font-bold text-white">
           {t({ uz: 'Kirish', en: 'Sign in', ru: 'Вход' })}
         </h1>
-        <p className="mb-8 text-sm text-white/80">
-          {t({
-            uz: 'Hisobingizga kiring',
-            en: 'Sign in to your account',
-            ru: 'Войдите в аккаунт',
-          })}
-        </p>
 
         <form
           onSubmit={onSubmit}
@@ -119,13 +112,6 @@ export default function LoginPage() {
               })}
               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none ring-blue-500 focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             />
-            <span className="mt-1 block text-[11px] text-slate-500 dark:text-slate-400">
-              {t({
-                uz: '1C dan sync qilinganlar uchun login va parol kompaniyangizdan beriladi.',
-                en: '1C-synced users receive a login and password from their company.',
-                ru: 'Для пользователей, синхронизированных из 1С, логин и пароль выдаёт компания.',
-              })}
-            </span>
           </label>
           <label className="mb-6 block">
             <span className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
@@ -155,18 +141,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-8 text-center text-sm text-white/90">
-          <Link
-            to="/register"
-            className="font-semibold underline decoration-white/40 underline-offset-4"
-          >
-            {t({
-              uz: "Ro'yxatdan o'tish",
-              en: 'Create account',
-              ru: 'Регистрация',
-            })}
-          </Link>
-        </p>
       </motion.div>
     </div>
   );
