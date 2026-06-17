@@ -3,6 +3,7 @@ import { io, type Socket } from 'socket.io-client';
 import { Bot, LoaderCircle, SendHorizonal, Sparkles, User } from 'lucide-react';
 import clsx from 'clsx';
 import { BACKEND_ORIGIN } from '@/services/api';
+import mobileApi from '@/services/api';
 
 type ChatMessage = {
   id: string;
@@ -35,6 +36,15 @@ export default function AiAssistantPage() {
         'Assalomu alaykum. Men sizning progress, xatolar, daraja, reyting va imtihon holatingiz bo‘yicha yordam bera olaman.',
     },
   ]);
+
+  const [aiReady, setAiReady] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    mobileApi
+      .getAiChatStatus()
+      .then((s) => setAiReady(s.ready))
+      .catch(() => setAiReady(false));
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -169,11 +179,13 @@ export default function AiAssistantPage() {
                     : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
               )}
             >
-              {status === 'ready'
+              {status === 'ready' && aiReady
                 ? 'Ulandi'
-                : status === 'error'
-                  ? 'Ulanmadi'
-                  : 'Ulanmoqda'}
+                : aiReady === false
+                  ? 'AI provider sozlanmagan'
+                  : status === 'error'
+                    ? 'Ulanmadi'
+                    : 'Ulanmoqda'}
             </p>
           </div>
         </div>

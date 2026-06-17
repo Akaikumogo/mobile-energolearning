@@ -484,6 +484,16 @@ class MobileApiService {
     return response.data;
   }
 
+  async getAiChatStatus(): Promise<{
+    provider: string;
+    ready: boolean;
+    openRouterConfigured: boolean;
+    ollamaConfigured: boolean;
+  }> {
+    const response = await this.api.get('/ai-chat/status');
+    return response.data;
+  }
+
   async getGlobalLeaderboard(limit = 50): Promise<LeaderboardResponse> {
     const response = await this.api.get<LeaderboardResponse>(
       '/leaderboard/global',
