@@ -106,6 +106,23 @@ export type MobileQuestion = {
   options: MobileQuestionOption[];
 };
 
+export type DailyPlanQuestion = MobileQuestion & {
+  answered: boolean;
+  isCorrect: boolean | null;
+  attemptCount: number;
+};
+
+export type DailyPlanResponse = {
+  planDate: string;
+  organizationId: string | null;
+  targetQuestions: number;
+  questionCount: number;
+  answeredCount: number;
+  completionPercent: number;
+  completed: boolean;
+  questions: DailyPlanQuestion[];
+};
+
 export type MatchingPair = {
   leftOptionId: string;
   rightOptionId: string;
@@ -457,6 +474,13 @@ class MobileApiService {
 
   async getMyProgress(): Promise<MyProgressResponse> {
     const response = await this.api.get<MyProgressResponse>('/progress/me');
+    return response.data;
+  }
+
+  async getDailyPlanToday(): Promise<DailyPlanResponse> {
+    const response = await this.api.get<DailyPlanResponse>(
+      '/mobile/daily-plan/today',
+    );
     return response.data;
   }
 

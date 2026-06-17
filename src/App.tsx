@@ -11,6 +11,7 @@ import RegisterPage from '@/pages/RegisterPage';
 import OrganizationSelectPage from '@/pages/OrganizationSelectPage';
 import LearnLayout from '@/pages/learn/LearnLayout';
 import LearnHomePage from '@/pages/learn/LearnHomePage';
+import DailyPlanPage from '@/pages/learn/DailyPlanPage';
 import ProfilePage from '@/pages/learn/ProfilePage';
 import LeaderboardPage from '@/pages/learn/LeaderboardPage';
 import LevelPage from '@/pages/learn/LevelPage';
@@ -33,6 +34,7 @@ export default function App() {
                 <Route path="/organization" element={<OrganizationSelectPage />} />
                 <Route path="/learn" element={<LearnLayout />}>
                   <Route index element={<LearnHomePage />} />
+                  <Route path="daily-plan" element={<DailyPlanPage />} />
                   <Route path="rating" element={<LeaderboardPage />} />
                   <Route path="assistant" element={<AiAssistantPage />} />
                   <Route path="profile" element={<ProfilePage />} />

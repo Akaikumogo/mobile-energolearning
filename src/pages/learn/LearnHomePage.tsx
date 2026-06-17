@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Lock } from 'lucide-react';
+import { ClipboardList, Lock } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import mobileApi from '@/services/api';
 import clsx from 'clsx';
@@ -11,6 +11,11 @@ export default function LearnHomePage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['progress-me'],
     queryFn: () => mobileApi.getMyProgress(),
+  });
+
+  const dailyPlanQuery = useQuery({
+    queryKey: ['daily-plan-today'],
+    queryFn: () => mobileApi.getDailyPlanToday(),
   });
 
   if (isLoading) {
@@ -50,6 +55,29 @@ export default function LearnHomePage() {
           })}
         </p>
       </motion.div>
+
+      <Link
+        to="/learn/daily-plan"
+        className="mb-6 flex items-center gap-4 rounded-2xl border border-blue-200 bg-white px-4 py-4 shadow-sm transition hover:border-blue-400 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]"
+      >
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-white">
+          <ClipboardList className="h-6 w-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-slate-900 dark:text-white">
+            {t({ uz: 'Bugungi plan', en: 'Today\'s plan', ru: 'План на сегодня' })}
+          </p>
+          <p className="text-xs text-slate-500">
+            {dailyPlanQuery.data
+              ? t({
+                  uz: `${dailyPlanQuery.data.answeredCount}/${dailyPlanQuery.data.questionCount} savol • ${dailyPlanQuery.data.completionPercent}%`,
+                  en: `${dailyPlanQuery.data.answeredCount}/${dailyPlanQuery.data.questionCount} questions • ${dailyPlanQuery.data.completionPercent}%`,
+                  ru: `${dailyPlanQuery.data.answeredCount}/${dailyPlanQuery.data.questionCount} вопросов • ${dailyPlanQuery.data.completionPercent}%`,
+                })
+              : t({ uz: 'Kamida 10 ta savol', en: 'At least 10 questions', ru: 'Минимум 10 вопросов' })}
+          </p>
+        </div>
+      </Link>
 
       <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">
         {t({ uz: 'Levelar', en: 'Levels', ru: 'Уровни' })}
