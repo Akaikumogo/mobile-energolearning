@@ -37,6 +37,7 @@ export type UserProfile = {
   avatarUrl?: string | null;
   organizationIds: string[];
   organizations: { id: string; name: string }[];
+  mustChangePassword?: boolean;
 };
 
 export type LoginResponse = {
@@ -445,16 +446,37 @@ class MobileApiService {
   }
 
   async uploadMyAvatar(
-    file: File
-  ): Promise<{ success: boolean; avatarUrl: string }> {
+    file: File | Blob,
+    options?: { hasFace?: boolean; faceConfidence?: number }
+  ): Promise<{ success: boolean; avatarUrl: string; hasFace: boolean }> {
     const form = new FormData();
-    form.append('file', file);
+    const fileName =
+      file instanceof File ? file.name : `avatar-${Date.now()}.jpg`;
+    form.append('file', file, fileName);
+    if (options?.hasFace !== undefined) {
+      form.append('hasFace', String(options.hasFace));
+    }
+    if (options?.faceConfidence !== undefined) {
+      form.append('faceConfidence', String(options.faceConfidence));
+    }
     const response = await this.api.post<{
       success: boolean;
       avatarUrl: string;
+      hasFace: boolean;
     }>('/users/me/avatar', form, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
+    return response.data;
+  }
+
+  async changePassword(body: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<{ success: boolean; message: string }> {
+    const response = await this.api.post<{
+      success: boolean;
+      message: string;
+    }>('/auth/change-password', body);
     return response.data;
   }
 
