@@ -23,9 +23,7 @@ export default function LoginPage() {
     onSuccess: (res) => {
       cacheUser(res.data.user);
       const u = res.data.user;
-      if (u.mustChangePassword) {
-        navigate('/force-change-password', { replace: true });
-      } else if (u.role === 'USER' && (u.organizations?.length ?? 0) === 0) {
+      if (u.role === 'USER' && (u.organizations?.length ?? 0) === 0) {
         navigate('/organization', { replace: true });
       } else {
         navigate('/learn', { replace: true });
