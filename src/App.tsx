@@ -2,13 +2,17 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AppProvider } from '@/providers/AppProvider';
 import { AudioPlayerProvider } from '@/providers/AudioPlayerProvider';
+import { ActivityHeartbeatProvider } from '@/providers/ActivityHeartbeatProvider';
 import { queryClient } from '@/queryClient';
 import { RootRedirect } from '@/router/RootRedirect';
 import { RequireAuth } from '@/router/RequireAuth';
+import { AuthFlowGate } from '@/router/AuthFlowGate';
 import WelcomeLanguage from '@/pages/WelcomeLanguage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import OrganizationSelectPage from '@/pages/OrganizationSelectPage';
+import ForceChangePasswordPage from '@/pages/ForceChangePasswordPage';
+import AvatarUploadPage from '@/pages/AvatarUploadPage';
 import LearnLayout from '@/pages/learn/LearnLayout';
 import LearnHomePage from '@/pages/learn/LearnHomePage';
 import DailyPlanPage from '@/pages/learn/DailyPlanPage';
@@ -31,8 +35,18 @@ export default function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route element={<RequireAuth />}>
-                <Route path="/organization" element={<OrganizationSelectPage />} />
-                <Route path="/learn" element={<LearnLayout />}>
+                <Route element={<AuthFlowGate />}>
+                  <Route path="/force-change-password" element={<ForceChangePasswordPage />} />
+                  <Route path="/upload-avatar" element={<AvatarUploadPage />} />
+                  <Route path="/organization" element={<OrganizationSelectPage />} />
+                  <Route
+                    path="/learn"
+                    element={
+                      <ActivityHeartbeatProvider>
+                        <LearnLayout />
+                      </ActivityHeartbeatProvider>
+                    }
+                  >
                   <Route index element={<LearnHomePage />} />
                   <Route path="daily-plan" element={<DailyPlanPage />} />
                   <Route path="rating" element={<LeaderboardPage />} />
@@ -45,6 +59,7 @@ export default function App() {
                     path="level/:levelId/theory/:theoryId"
                     element={<TheoryLessonPage />}
                   />
+                  </Route>
                 </Route>
               </Route>
               <Route path="/" element={<RootRedirect />} />

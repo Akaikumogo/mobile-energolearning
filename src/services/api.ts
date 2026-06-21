@@ -427,6 +427,10 @@ class MobileApiService {
     return payload;
   }
 
+  async sendHeartbeat(): Promise<void> {
+    await this.api.post('/user-activity/heartbeat');
+  }
+
   async logout(): Promise<void> {
     const refreshToken = localStorage.getItem('refreshToken');
     if (!refreshToken) {
