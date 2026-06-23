@@ -8,6 +8,8 @@ import { RootRedirect } from '@/router/RootRedirect';
 import { RequireAuth } from '@/router/RequireAuth';
 import WelcomeLanguage from '@/pages/WelcomeLanguage';
 import LoginPage from '@/pages/LoginPage';
+import OAuthCallbackPage from '@/pages/OAuthCallbackPage';
+import { OAuthDeepLinkHandler } from '@/components/OAuthDeepLinkHandler';
 import RegisterPage from '@/pages/RegisterPage';
 import OrganizationSelectPage from '@/pages/OrganizationSelectPage';
 import LearnLayout from '@/pages/learn/LearnLayout';
@@ -27,9 +29,11 @@ export default function App() {
       <AppProvider>
         <AudioPlayerProvider>
           <BrowserRouter>
+            <OAuthDeepLinkHandler />
             <Routes>
               <Route path="/welcome" element={<WelcomeLanguage />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route element={<RequireAuth />}>
                 <Route path="/organization" element={<OrganizationSelectPage />} />

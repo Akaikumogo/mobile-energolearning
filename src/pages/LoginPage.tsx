@@ -2,32 +2,27 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import { Capacitor } from '@capacitor/core';
+import { IdCard } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTranslation } from '@/hooks/useTranslation';
-import mobileApi, { type UserProfile } from '@/services/api';
+import mobileApi from '@/services/api';
 import clsx from 'clsx';
-
-function cacheUser(user: UserProfile) {
-  localStorage.setItem('user', JSON.stringify(user));
-}
 
 export default function LoginPage() {
   const { t, lang, setLang } = useTranslation();
   const navigate = useNavigate();
-  const [loginOrEmail, setLoginOrEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const loginMut = useMutation({
-    mutationFn: () => mobileApi.login(loginOrEmail.trim(), password),
-    onSuccess: (res) => {
-      cacheUser(res.data.user);
-      const u = res.data.user;
-      if (u.role === 'USER' && (u.organizations?.length ?? 0) === 0) {
-        navigate('/organization', { replace: true });
-      } else {
-        navigate('/learn', { replace: true });
-      }
+  const oauthMut = useMutation({
+    mutationFn: () =>
+      mobileApi.getEnergoIdAuthorizeUrl(
+        Capacitor.isNativePlatform() ? 'mobile' : 'web',
+      ),
+    onSuccess: ({ authorizeUrl, redirectUri, state }) => {
+      localStorage.setItem('oauth_state', state);
+      localStorage.setItem('oauth_redirect_uri', redirectUri);
+      window.location.href = authorizeUrl;
     },
     onError: (e: unknown) => {
       const msg =
@@ -39,19 +34,13 @@ export default function LoginPage() {
         typeof msg === 'string'
           ? msg
           : t({
-              uz: 'Kirish muvaffaqiyatsiz',
-              en: 'Login failed',
-              ru: 'Ошибка входа',
+              uz: 'Energo ID ga ulanib bo‘lmadi',
+              en: 'Could not connect to Energo ID',
+              ru: 'Не удалось подключиться к Energo ID',
             }),
       );
     },
   });
-
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    loginMut.mutate();
-  };
 
   return (
     <div className="relative min-h-dvh bg-gradient-to-br from-[#2563EB] to-[#0a36ad] dark:from-slate-950 dark:to-slate-900">
@@ -74,73 +63,67 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="mb-8 text-2xl font-bold text-white">
-          {t({ uz: 'Kirish', en: 'Sign in', ru: 'Вход' })}
-        </h1>
+        <div className="mb-8 flex items-center gap-3 text-white">
+          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/15 backdrop-blur">
+            <IdCard size={24} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">ElektroLearn</h1>
+            <p className="text-sm text-white/80">
+              {t({
+                uz: 'Energo ID orqali xavfsiz kirish',
+                en: 'Secure sign-in via Energo ID',
+                ru: 'Безопасный вход через Energo ID',
+              })}
+            </p>
+          </div>
+        </div>
 
-        <form
-          onSubmit={onSubmit}
-          className="rounded-3xl border border-white/15 bg-white/95 p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900/95"
-        >
+        <div className="rounded-3xl border border-white/15 bg-white/95 p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900/95">
           {error && (
             <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">
               {error}
             </p>
           )}
-          <label className="mb-4 block">
-            <span className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
-              {t({
-                uz: 'Login yoki Email',
-                en: 'Login or Email',
-                ru: 'Логин или Email',
-              })}
-            </span>
-            <input
-              type="text"
-              autoComplete="username"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              inputMode="email"
-              required
-              value={loginOrEmail}
-              onChange={(e) => setLoginOrEmail(e.target.value)}
-              placeholder={t({
-                uz: 'ali.123.met yoki user@mail.com',
-                en: 'login or user@mail.com',
-                ru: 'логин или user@mail.com',
-              })}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none ring-blue-500 focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-            />
-          </label>
-          <label className="mb-6 block">
-            <span className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
-              {t({ uz: 'Parol', en: 'Password', ru: 'Пароль' })}
-            </span>
-            <input
-              type="password"
-              autoComplete="current-password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none ring-blue-500 focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-            />
-          </label>
+
+          <p className="mb-6 text-sm text-slate-600 dark:text-slate-400">
+            {t({
+              uz: 'Davom etish uchun Energo ID hisobingiz bilan tizimga kiring. Login va parol shu yerda kiritilmaydi.',
+              en: 'Continue with your Energo ID account. You will not enter a password in this app.',
+              ru: 'Продолжите со своей учётной записью Energo ID. Пароль вводится не здесь.',
+            })}
+          </p>
+
           <button
-            type="submit"
-            disabled={loginMut.isPending}
+            type="button"
+            disabled={oauthMut.isPending}
+            onClick={() => {
+              setError(null);
+              oauthMut.mutate();
+            }}
             className={clsx(
-              'w-full rounded-xl bg-blue-600 py-3.5 font-semibold text-white shadow-lg transition hover:bg-blue-700',
-              loginMut.isPending && 'opacity-70',
+              'flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 font-semibold text-white shadow-lg transition hover:bg-blue-700',
+              oauthMut.isPending && 'opacity-70',
             )}
           >
-            {loginMut.isPending
+            <IdCard size={18} />
+            {oauthMut.isPending
               ? '…'
-              : t({ uz: 'Kirish', en: 'Sign in', ru: 'Войти' })}
+              : t({
+                  uz: 'Energo ID bilan kirish',
+                  en: 'Sign in with Energo ID',
+                  ru: 'Войти через Energo ID',
+                })}
           </button>
-        </form>
 
+          <button
+            type="button"
+            className="mt-4 w-full text-center text-xs text-slate-500 underline"
+            onClick={() => navigate('/welcome', { replace: true })}
+          >
+            {t({ uz: 'Orqaga', en: 'Back', ru: 'Назад' })}
+          </button>
+        </div>
       </motion.div>
     </div>
   );

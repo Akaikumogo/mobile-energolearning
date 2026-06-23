@@ -395,6 +395,34 @@ class MobileApiService {
     return this.refreshPromise;
   }
 
+  async getEnergoIdAuthorizeUrl(client: 'mobile' | 'web' = 'mobile') {
+    const response = await this.api.get<{
+      authorizeUrl: string;
+      redirectUri: string;
+      state: string;
+    }>('/auth/energo-id/authorize-url', { params: { client } });
+    return response.data;
+  }
+
+  async exchangeEnergoIdCode(
+    code: string,
+    redirectUri?: string,
+    state?: string,
+  ): Promise<LoginResponse> {
+    const response = await this.api.post<LoginResponse>('/auth/energo-id/exchange', {
+      code,
+      redirect_uri: redirectUri,
+      state,
+    });
+    const payload = response.data;
+    localStorage.setItem('accessToken', payload.data.accessToken);
+    localStorage.setItem('refreshToken', payload.data.refreshToken);
+    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('user', JSON.stringify(payload.data.user));
+    return payload;
+  }
+
+  /** @deprecated OAuth orqali kirish ishlating */
   async login(loginOrEmail: string, password: string): Promise<LoginResponse> {
     // Backend `login` ham `email` ham qabul qiladi (NES 1C dan sync qilingan
     // foydalanuvchilarning logini email ustunida saqlanadi).
