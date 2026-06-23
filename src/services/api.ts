@@ -400,6 +400,7 @@ class MobileApiService {
       authorizeUrl: string;
       redirectUri: string;
       state: string;
+      codeVerifier?: string;
       client: 'mobile' | 'web';
       platform?: { code: string; name: string };
     }>('/auth/energo-id/authorize-url', { params: { client } });
@@ -411,6 +412,7 @@ class MobileApiService {
     redirectUri?: string,
     state?: string,
     client?: 'mobile' | 'web',
+    codeVerifier?: string,
   ): Promise<LoginResponse> {
     const response = await this.api.post<LoginResponse>('/auth/energo-id/exchange', {
       onetime: code,
@@ -418,6 +420,7 @@ class MobileApiService {
       redirect_uri: redirectUri,
       state,
       client,
+      code_verifier: codeVerifier,
     });
     const payload = response.data;
     localStorage.setItem('accessToken', payload.data.accessToken);

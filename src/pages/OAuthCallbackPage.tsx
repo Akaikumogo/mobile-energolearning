@@ -42,17 +42,25 @@ export default function OAuthCallbackPage() {
       if (!code) throw new Error('OAuth code topilmadi');
       const redirectUri = resolveCallbackRedirectUri();
       const client = resolveCallbackClient(redirectUri);
-      const state = params.get('state') ?? undefined;
+      const state = params.get('state');
       const expectedState = localStorage.getItem('oauth_state');
-      if (expectedState && state && expectedState !== state) {
+      if (!state || !expectedState || expectedState !== state) {
         throw new Error('OAuth state mos kelmadi');
       }
-      return mobileApi.exchangeEnergoIdCode(code, redirectUri, state, client);
+      const codeVerifier = localStorage.getItem('oauth_code_verifier') ?? undefined;
+      return mobileApi.exchangeEnergoIdCode(
+        code,
+        redirectUri,
+        state,
+        client,
+        codeVerifier,
+      );
     },
     onSuccess: (res) => {
       localStorage.removeItem('oauth_state');
       localStorage.removeItem('oauth_redirect_uri');
       localStorage.removeItem('oauth_client');
+      localStorage.removeItem('oauth_code_verifier');
       cacheUser(res.data.user);
       const u = res.data.user;
       if (u.role === 'USER' && (u.organizations?.length ?? 0) === 0) {

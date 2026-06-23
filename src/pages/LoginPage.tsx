@@ -19,10 +19,15 @@ export default function LoginPage() {
       mobileApi.getEnergoIdAuthorizeUrl(
         Capacitor.isNativePlatform() ? 'mobile' : 'web',
       ),
-    onSuccess: ({ authorizeUrl, redirectUri, state, client }) => {
+    onSuccess: ({ authorizeUrl, redirectUri, state, client, codeVerifier }) => {
       localStorage.setItem('oauth_state', state);
       localStorage.setItem('oauth_redirect_uri', redirectUri);
       localStorage.setItem('oauth_client', client);
+      if (codeVerifier) {
+        localStorage.setItem('oauth_code_verifier', codeVerifier);
+      } else {
+        localStorage.removeItem('oauth_code_verifier');
+      }
       window.location.href = authorizeUrl;
     },
     onError: (e: unknown) => {
