@@ -14,19 +14,23 @@ export default function OAuthCallbackPage() {
 
   const exchange = useMutation({
     mutationFn: async () => {
-      const code = params.get('code');
+      const code = params.get('onetime') ?? params.get('code');
       if (!code) throw new Error('OAuth code topilmadi');
       const redirectUri = localStorage.getItem('oauth_redirect_uri') ?? undefined;
+      const client =
+        (localStorage.getItem('oauth_client') as 'mobile' | 'web' | null) ??
+        undefined;
       const state = params.get('state') ?? undefined;
       const expectedState = localStorage.getItem('oauth_state');
       if (expectedState && state && expectedState !== state) {
         throw new Error('OAuth state mos kelmadi');
       }
-      return mobileApi.exchangeEnergoIdCode(code, redirectUri, state);
+      return mobileApi.exchangeEnergoIdCode(code, redirectUri, state, client);
     },
     onSuccess: (res) => {
       localStorage.removeItem('oauth_state');
       localStorage.removeItem('oauth_redirect_uri');
+      localStorage.removeItem('oauth_client');
       cacheUser(res.data.user);
       const u = res.data.user;
       if (u.role === 'USER' && (u.organizations?.length ?? 0) === 0) {
@@ -42,7 +46,7 @@ export default function OAuthCallbackPage() {
   });
 
   useEffect(() => {
-    if (!params.get('code')) {
+    if (!params.get('onetime') && !params.get('code')) {
       setError('OAuth code topilmadi');
       return;
     }

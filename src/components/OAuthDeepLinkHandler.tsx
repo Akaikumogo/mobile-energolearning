@@ -5,8 +5,10 @@ import { Capacitor } from '@capacitor/core';
 function parseOAuthCallbackUrl(rawUrl: string) {
   try {
     const url = new URL(rawUrl.replace('uz.elektroxavfsizlik.app://', 'https://local/'));
-    if (!url.pathname.includes('oauth/callback')) return null;
-    const code = url.searchParams.get('code');
+    if (!url.pathname.includes('oauth/callback') && !url.pathname.includes('callback')) {
+      return null;
+    }
+    const code = url.searchParams.get('onetime') ?? url.searchParams.get('code');
     if (!code) return null;
     return {
       code,

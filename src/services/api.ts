@@ -408,11 +408,14 @@ class MobileApiService {
     code: string,
     redirectUri?: string,
     state?: string,
+    client?: 'mobile' | 'web',
   ): Promise<LoginResponse> {
     const response = await this.api.post<LoginResponse>('/auth/energo-id/exchange', {
+      onetime: code,
       code,
       redirect_uri: redirectUri,
       state,
+      client,
     });
     const payload = response.data;
     localStorage.setItem('accessToken', payload.data.accessToken);
