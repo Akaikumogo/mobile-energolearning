@@ -400,6 +400,8 @@ class MobileApiService {
       authorizeUrl: string;
       redirectUri: string;
       state: string;
+      client: 'mobile' | 'web';
+      platform?: { code: string; name: string };
     }>('/auth/energo-id/authorize-url', { params: { client } });
     return response.data;
   }
