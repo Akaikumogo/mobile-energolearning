@@ -1,10 +1,34 @@
 import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { isAxiosError } from 'axios';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import mobileApi, { type UserProfile } from '@/services/api';
 
 function cacheUser(user: UserProfile) {
   localStorage.setItem('user', JSON.stringify(user));
+}
+
+function resolveCallbackRedirectUri() {
+  const stored = localStorage.getItem('oauth_redirect_uri')?.trim();
+  if (stored) return stored;
+  return `${window.location.origin}${window.location.pathname}`.replace(/\/+$/, '');
+}
+
+function resolveCallbackClient(redirectUri: string): 'mobile' | 'web' {
+  const stored = localStorage.getItem('oauth_client');
+  if (stored === 'web' || stored === 'mobile') return stored;
+  return /^https?:\/\//i.test(redirectUri) ? 'web' : 'mobile';
+}
+
+function formatExchangeError(error: unknown) {
+  if (isAxiosError(error)) {
+    const message = error.response?.data?.message;
+    if (typeof message === 'string') return message;
+    if (Array.isArray(message)) return message.join(', ');
+    return error.message;
+  }
+  if (error instanceof Error) return error.message;
+  return 'Kirish amalga oshmadi';
 }
 
 export default function OAuthCallbackPage() {
@@ -16,10 +40,8 @@ export default function OAuthCallbackPage() {
     mutationFn: async () => {
       const code = params.get('onetime') ?? params.get('code');
       if (!code) throw new Error('OAuth code topilmadi');
-      const redirectUri = localStorage.getItem('oauth_redirect_uri') ?? undefined;
-      const client =
-        (localStorage.getItem('oauth_client') as 'mobile' | 'web' | null) ??
-        undefined;
+      const redirectUri = resolveCallbackRedirectUri();
+      const client = resolveCallbackClient(redirectUri);
       const state = params.get('state') ?? undefined;
       const expectedState = localStorage.getItem('oauth_state');
       if (expectedState && state && expectedState !== state) {
@@ -40,8 +62,7 @@ export default function OAuthCallbackPage() {
       }
     },
     onError: (e: unknown) => {
-      const msg = e instanceof Error ? e.message : 'Kirish amalga oshmadi';
-      setError(msg);
+      setError(formatExchangeError(e));
     },
   });
 
