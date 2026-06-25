@@ -396,6 +396,8 @@ class MobileApiService {
   }
 
   async getEnergoIdAuthorizeUrl(client: 'mobile' | 'web' = 'mobile') {
+    const callbackOrigin =
+      typeof window !== 'undefined' ? window.location.origin : undefined;
     const response = await this.api.get<{
       authorizeUrl: string;
       redirectUri: string;
@@ -403,7 +405,12 @@ class MobileApiService {
       codeVerifier?: string;
       client: 'mobile' | 'web';
       platform?: { code: string; name: string };
-    }>('/auth/energo-id/authorize-url', { params: { client } });
+    }>('/auth/energo-id/authorize-url', {
+      params: {
+        client,
+        ...(callbackOrigin ? { callback_origin: callbackOrigin } : {}),
+      },
+    });
     return response.data;
   }
 

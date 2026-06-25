@@ -42,7 +42,9 @@ export function OAuthDeepLinkHandler() {
       const handle = await App.addListener('appUrlOpen', (event: { url: string }) => {
         const parsed = parseOAuthCallbackUrl(event.url);
         if (!parsed) return;
-        const qs = new URLSearchParams({ code: parsed.code });
+        const qs = new URLSearchParams();
+        qs.set('onetime', parsed.code);
+        qs.set('code', parsed.code);
         if (parsed.state) qs.set('state', parsed.state);
         navigate(`/oauth/callback?${qs.toString()}`, { replace: true });
       });
