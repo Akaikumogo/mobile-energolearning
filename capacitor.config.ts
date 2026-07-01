@@ -9,7 +9,14 @@ const config: CapacitorConfig = {
   android: {
     adjustMarginsForEdgeToEdge: 'auto',
   },
+  plugins: {
+    LiveUpdates: {
+      appId: 'c5c3bff6', // Buni keyingi bosqichda Appflow'dan olamiz
+      channel: 'Production',
+      autoUpdateMethod: 'background',
+      maxVersions: 2
+    }
+  }
 };
 
 export default config;
-
