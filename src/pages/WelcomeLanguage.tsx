@@ -53,7 +53,9 @@ export default function WelcomeLanguage() {
             ru: 'ElektroLearn — безопасность и обучение в одном месте.',
           })}
         </p>
-
+        <p className="mb-10 max-w-sm text-center text-sm text-white/85">
+          Energo IT
+        </p>
         <div className="grid w-full max-w-sm gap-3">
           {LANGS.map((item) => (
             <motion.button
