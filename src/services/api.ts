@@ -60,17 +60,19 @@ export type ProgressLevelItem = {
   completedAt: string | null;
 };
 
+export type HeartsState = {
+  heartsCount: number;
+  maxHearts: number;
+  nextRegenAt: string | null;
+  lastHeartRegenAt: string | null;
+};
+
 export type MyProgressResponse = {
   totalXp: number;
   completedLevels: number;
   badge: { label: string; bolts: number };
   levels: ProgressLevelItem[];
-  hearts: {
-    heartsCount: number;
-    maxHearts: number;
-    nextRegenAt: string | null;
-    lastHeartRegenAt: string | null;
-  } | null;
+  hearts: HeartsState | null;
 };
 
 export type LevelDetailTheory = {
@@ -619,6 +621,7 @@ class MobileApiService {
       isCorrect: boolean;
       correctOptionId: string | null;
       xpEarned: number;
+      hearts?: HeartsState;
     }>('/progress/answer', { questionId, selectedOptionId });
     return response.data;
   }
@@ -627,6 +630,7 @@ class MobileApiService {
     const response = await this.api.post<{
       isCorrect: boolean;
       xpEarned: number;
+      hearts?: HeartsState;
     }>('/progress/matching', { questionId, pairs });
     return response.data;
   }

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -19,6 +20,24 @@ export default function OrganizationSelectPage() {
   const cached = readCachedUser();
   const fetchOrgs = Boolean(cached && cached.role === 'USER');
 
+  // localStorage'dagi user keshi eskirgan bo'lishi mumkin — Energo ID sync
+  // allaqachon tashkilot biriktirgan bo'lsa, bu sahifada qamalib qolmaslik
+  // uchun serverdan yangi profilni olamiz.
+  const meQuery = useQuery({
+    queryKey: ['me'],
+    queryFn: () => mobileApi.me(),
+    enabled: Boolean(cached),
+  });
+
+  useEffect(() => {
+    const fresh = meQuery.data;
+    if (!fresh) return;
+    cacheUser(fresh);
+    if (fresh.role !== 'USER' || (fresh.organizations?.length ?? 0) > 0) {
+      navigate('/learn', { replace: true });
+    }
+  }, [meQuery.data, navigate]);
+
   const { data: orgs = [], isLoading } = useQuery({
     queryKey: ['public-organizations'],
     queryFn: () => mobileApi.getPublicOrganizations(),
@@ -32,6 +51,19 @@ export default function OrganizationSelectPage() {
       cacheUser(profile);
       queryClient.setQueryData(['me'], profile);
       navigate('/learn', { replace: true });
+    },
+    onError: async () => {
+      // "Tashkilot allaqachon tanlangan" xatosi — serverda org bor, kesh eski.
+      try {
+        const fresh = await mobileApi.me();
+        cacheUser(fresh);
+        queryClient.setQueryData(['me'], fresh);
+        if ((fresh.organizations?.length ?? 0) > 0) {
+          navigate('/learn', { replace: true });
+        }
+      } catch {
+        /* xato xabari quyida ko'rsatiladi */
+      }
     },
   });
 

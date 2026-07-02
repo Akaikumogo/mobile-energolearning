@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { CheckCircle2, ClipboardList, XCircle } from 'lucide-react';
+import type { AxiosError } from 'axios';
+import { CheckCircle2, ClipboardList, HeartCrack, XCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import { useTranslation } from '@/hooks/useTranslation';
 import mobileApi from '@/services/api';
+import type { HeartsState, MyProgressResponse } from '@/services/api';
 import { queryClient } from '@/queryClient';
 import { CheerfulBackLink } from '@/components/CheerfulBackLink';
 import LearnProgressBar from '@/components/LearnProgressBar';
@@ -14,11 +16,20 @@ export default function DailyPlanPage() {
   const [qIndex, setQIndex] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [pickedOptionId, setPickedOptionId] = useState<string | null>(null);
+  const [outOfLives, setOutOfLives] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const planQuery = useQuery({
     queryKey: ['daily-plan-today'],
     queryFn: () => mobileApi.getDailyPlanToday(),
   });
+
+  const applyHearts = (hearts: HeartsState | null | undefined) => {
+    if (!hearts) return;
+    queryClient.setQueryData<MyProgressResponse>(['progress-me'], (old) =>
+      old ? { ...old, hearts } : old,
+    );
+  };
 
   const answerMut = useMutation({
     mutationFn: ({
@@ -29,10 +40,32 @@ export default function DailyPlanPage() {
       selectedOptionId: string;
     }) => mobileApi.submitAnswer(questionId, selectedOptionId),
     onSuccess: (res, variables) => {
+      setSubmitError(null);
       setFeedback(res.isCorrect ? 'correct' : 'wrong');
       setPickedOptionId(variables.selectedOptionId);
+      applyHearts(res.hearts);
+      if (!res.isCorrect && res.hearts && res.hearts.heartsCount <= 0) {
+        setOutOfLives(true);
+      }
       queryClient.invalidateQueries({ queryKey: ['daily-plan-today'] });
       queryClient.invalidateQueries({ queryKey: ['progress-me'] });
+    },
+    onError: (err) => {
+      const axErr = err as AxiosError<{ code?: string; state?: HeartsState }>;
+      const data = axErr?.response?.data;
+      if (axErr?.response?.status === 403 && data?.code === 'NO_HEARTS_LEFT') {
+        applyHearts(data.state);
+        setOutOfLives(true);
+        setSubmitError(null);
+        return;
+      }
+      setSubmitError(
+        t({
+          uz: 'Javob yuborilmadi. Internetni tekshirib qayta urinib ko‘ring.',
+          en: 'Answer was not sent. Check your connection and try again.',
+          ru: 'Ответ не отправлен. Проверьте соединение и попробуйте ещё раз.',
+        }),
+      );
     },
   });
 
@@ -42,12 +75,15 @@ export default function DailyPlanPage() {
 
   const onPick = (optionId: string) => {
     if (!question || feedback || answerMut.isPending || question.answered) return;
+    if (outOfLives) return;
+    setSubmitError(null);
     answerMut.mutate({ questionId: question.id, selectedOptionId: optionId });
   };
 
   const next = () => {
     setFeedback(null);
     setPickedOptionId(null);
+    setSubmitError(null);
     if (qIndex + 1 < questions.length) {
       setQIndex((i) => i + 1);
     }
@@ -169,6 +205,22 @@ export default function DailyPlanPage() {
                 : t({ uz: 'Noto`g`ri', en: 'Wrong', ru: 'Неверно' })}
             </div>
           )}
+          {outOfLives && (
+            <div className="flex items-center gap-2 rounded-xl bg-rose-100 px-4 py-3 text-sm font-semibold text-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
+              <HeartCrack className="h-5 w-5 shrink-0" />
+              {t({
+                uz: 'Jon tugadi. Savollarni davom ettirish uchun ertaga qayting.',
+                en: 'No lives left. Come back tomorrow to continue.',
+                ru: 'Жизни закончились. Возвращайтесь завтра.',
+              })}
+            </div>
+          )}
+          {submitError && !outOfLives && (
+            <div className="flex items-center gap-2 rounded-xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+              <XCircle className="h-5 w-5 shrink-0" />
+              {submitError}
+            </div>
+          )}
           {(feedback || question.answered) && qIndex + 1 < questions.length && (
             <button
               type="button"
@@ -193,6 +245,7 @@ export default function DailyPlanPage() {
               setQIndex(idx);
               setFeedback(null);
               setPickedOptionId(null);
+              setSubmitError(null);
             }}
             className={clsx(
               'flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left text-sm',

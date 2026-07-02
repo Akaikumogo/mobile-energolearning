@@ -32,17 +32,17 @@ export default function LearnLayout() {
     enabled: !blockForOrg,
   });
 
-  if (blockForOrg) {
-    return <Navigate to="/organization" replace />;
-  }
-
-  const xp = progress?.totalXp ?? 0;
+  // Hearts hali yuklanmagan bo'lsa to'liq ko'rsatamiz — 5 ta singan yurak
+  // ko'rinib qolmasin.
+  const heartsKnown = progress?.hearts != null;
   const heartsCount = progress?.hearts?.heartsCount ?? 0;
   const heartsMax = progress?.hearts?.maxHearts ?? 5;
   const heartsUi = useMemo(() => {
-    const cnt = Math.max(0, Math.min(heartsMax, heartsCount));
+    const cnt = heartsKnown
+      ? Math.max(0, Math.min(heartsMax, heartsCount))
+      : heartsMax;
     return { cnt, empty: Math.max(0, heartsMax - cnt) };
-  }, [heartsCount, heartsMax]);
+  }, [heartsKnown, heartsCount, heartsMax]);
 
   const globalRankQuery = useQuery({
     queryKey: ['leaderboard-global-me'],
@@ -50,6 +50,13 @@ export default function LearnLayout() {
     enabled: !blockForOrg,
   });
   const myGlobalRank = globalRankQuery.data?.me?.rank ?? null;
+
+  // Hooks'lardan keyin — aks holda shartli return hook tartibini buzadi.
+  if (blockForOrg) {
+    return <Navigate to="/organization" replace />;
+  }
+
+  const xp = progress?.totalXp ?? 0;
 
   return (
     <div className="learn-app flex min-h-dvh flex-col bg-slate-50 dark:bg-[var(--learn-bg)]">

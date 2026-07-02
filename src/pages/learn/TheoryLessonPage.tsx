@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 import {
   BadgeCheck,
   Heart,
@@ -14,7 +15,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useDevMode } from '@/hooks/useDevMode';
 import mobileApi from '@/services/api';
-import type { MobileNazariyaSection, MobileQuestion, MatchingPair } from '@/services/api';
+import type {
+  MobileNazariyaSection,
+  MobileQuestion,
+  MatchingPair,
+  HeartsState,
+  MyProgressResponse,
+} from '@/services/api';
 import { queryClient } from '@/queryClient';
 import { CheerfulBackLink } from '@/components/CheerfulBackLink';
 import TheorySlideCard from '@/components/TheorySlideCard';
@@ -43,6 +50,7 @@ export default function TheoryLessonPage() {
     string | null
   >(null);
   const [outOfLives, setOutOfLives] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [matchLeftId, setMatchLeftId] = useState<string | null>(null);
   const [matchPairs, setMatchPairs] = useState<
     Array<{ leftOptionId: string; rightOptionId: string; pairIndex: number }>
@@ -53,6 +61,9 @@ export default function TheoryLessonPage() {
     queryFn: () => mobileApi.getMyProgress(),
   });
 
+  // Hearts hali yuklanmagan bo'lsa (undefined) foydalanuvchini bloklamaymiz —
+  // aks holda sekin internetda noto'g'ri "Jon tugagan" xabari ko'rinadi.
+  const heartsKnown = progressQuery.isSuccess;
   const heartsCount = progressQuery.data?.hearts?.heartsCount ?? 0;
   const heartsMax = progressQuery.data?.hearts?.maxHearts ?? 5;
   const heartsUi = useMemo(() => {
@@ -60,7 +71,40 @@ export default function TheoryLessonPage() {
     return { cnt, empty: Math.max(0, heartsMax - cnt) };
   }, [heartsCount, heartsMax]);
 
-  const canDoQuiz = devMode || heartsCount > 0;
+  const noLives = heartsKnown && heartsCount <= 0;
+  const canDoQuiz = devMode || !heartsKnown || heartsCount > 0;
+  const blocked = outOfLives && !devMode;
+
+  // Serverdan kelgan hearts holatini darhol cache'ga yozamiz — eskirgan
+  // qiymat asosida noto'g'ri qaror qabul qilinmasin.
+  const applyHearts = (hearts: HeartsState | null | undefined) => {
+    if (!hearts) return;
+    queryClient.setQueryData<MyProgressResponse>(['progress-me'], (old) =>
+      old ? { ...old, hearts } : old,
+    );
+  };
+
+  const handleSubmitError = (err: unknown) => {
+    const axErr = err as AxiosError<{
+      code?: string;
+      state?: HeartsState;
+      message?: string;
+    }>;
+    const data = axErr?.response?.data;
+    if (axErr?.response?.status === 403 && data?.code === 'NO_HEARTS_LEFT') {
+      applyHearts(data.state);
+      setOutOfLives(true);
+      setSubmitError(null);
+      return;
+    }
+    setSubmitError(
+      t({
+        uz: 'Javob yuborilmadi. Internetni tekshirib qayta urinib ko‘ring.',
+        en: 'Answer was not sent. Check your connection and try again.',
+        ru: 'Ответ не отправлен. Проверьте соединение и попробуйте ещё раз.',
+      }),
+    );
+  };
 
   const theoryQuery = useQuery({
     queryKey: ['theory', theoryId],
@@ -72,6 +116,12 @@ export default function TheoryLessonPage() {
     setReadStep(0);
     setPhase('read');
     setQIndex(0);
+    setFeedback(null);
+    setPickedOptionId(null);
+    setRevealedCorrectOptionId(null);
+    setOutOfLives(false);
+    setSubmitError(null);
+    setLastXp(0);
   }, [theoryId]);
 
   useEffect(() => {
@@ -158,6 +208,7 @@ export default function TheoryLessonPage() {
       selectedOptionId: string;
     }) => mobileApi.submitAnswer(questionId, selectedOptionId),
     onSuccess: (res, variables) => {
+      setSubmitError(null);
       setFeedback(res.isCorrect ? 'correct' : 'wrong');
       setPickedOptionId(variables.selectedOptionId);
       setRevealedCorrectOptionId(
@@ -165,12 +216,16 @@ export default function TheoryLessonPage() {
           (res.isCorrect ? variables.selectedOptionId : null),
       );
       setLastXp((x) => x + res.xpEarned);
-      if (!res.isCorrect && heartsCount <= 1) {
+      applyHearts(res.hearts);
+      // Serverdan kelgan aniq qiymat asosida hisoblanadi (eskirgan cache emas).
+      const heartsLeft = res.hearts ? res.hearts.heartsCount : heartsCount - 1;
+      if (!res.isCorrect && heartsLeft <= 0) {
         setOutOfLives(true);
       }
       queryClient.invalidateQueries({ queryKey: ['progress-me'] });
       queryClient.invalidateQueries({ queryKey: ['level-detail', levelId] });
     },
+    onError: handleSubmitError,
   });
 
   const matchingMut = useMutation({
@@ -182,21 +237,26 @@ export default function TheoryLessonPage() {
       pairs: MatchingPair[];
     }) => mobileApi.submitMatching(questionId, pairs),
     onSuccess: (res) => {
+      setSubmitError(null);
       setFeedback(res.isCorrect ? 'correct' : 'wrong');
       setPickedOptionId(null);
       setRevealedCorrectOptionId(null);
       setLastXp((x) => x + res.xpEarned);
-      if (!res.isCorrect && heartsCount <= 1) {
+      applyHearts(res.hearts);
+      const heartsLeft = res.hearts ? res.hearts.heartsCount : heartsCount - 1;
+      if (!res.isCorrect && heartsLeft <= 0) {
         setOutOfLives(true);
       }
       queryClient.invalidateQueries({ queryKey: ['progress-me'] });
       queryClient.invalidateQueries({ queryKey: ['level-detail', levelId] });
     },
+    onError: handleSubmitError,
   });
 
   const onPickOption = (optionId: string) => {
     if (!question || feedback || answerMut.isPending) return;
-    if (!canDoQuiz) return;
+    if (!canDoQuiz || blocked) return;
+    setSubmitError(null);
     answerMut.mutate({ questionId: question.id, selectedOptionId: optionId });
   };
 
@@ -205,6 +265,7 @@ export default function TheoryLessonPage() {
     setPickedOptionId(null);
     setRevealedCorrectOptionId(null);
     setOutOfLives(false);
+    setSubmitError(null);
     if (qIndex + 1 >= questions.length) {
       setPhase('done');
       return;
@@ -459,7 +520,7 @@ export default function TheoryLessonPage() {
                 </motion.button>
               </>
             )}
-            {!canDoQuiz && (
+            {noLives && !devMode && (
               <p className="mt-3 text-center text-sm text-rose-600 dark:text-[var(--learn-red)]">
                 {t({
                   uz: 'Jon tugagan. Savollar ishlash uchun ertaga qayta urinib ko‘ring.',
@@ -567,19 +628,39 @@ export default function TheoryLessonPage() {
                 ] as const;
 
                 const pickable =
-                  !feedback && !matchingMut.isPending && canDoQuiz;
-                const lockOtherLeft = matchLeftId != null;
+                  !feedback && !matchingMut.isPending && canDoQuiz && !blocked;
 
+                const getPairClasses = (pairIndex: number) =>
+                  palette[pairIndex % palette.length];
+
+                const removePairByIndex = (pairIndex: number) => {
+                  if (feedback || matchingMut.isPending) return;
+                  setMatchPairs((prev) => prev.filter((p) => p.pairIndex !== pairIndex));
+                  setMatchLeftId(null);
+                };
+
+                // Juftlangan variant bosilsa juftlik bekor qilinadi — button
+                // disabled bo'lsa ichidagi span onClick ishlamaydi, shu sababli
+                // o'chirish button'ning o'zida.
                 const onPickLeft = (id: string) => {
                   if (!pickable) return;
-                  if (byLeft.has(id)) return;
+                  const paired = byLeft.get(id);
+                  if (paired) {
+                    removePairByIndex(paired.pairIndex);
+                    return;
+                  }
                   setMatchLeftId((cur) => (cur === id ? null : id));
                 };
 
                 const onPickRight = (rightId: string) => {
                   if (!pickable) return;
+                  const paired = byRight.get(rightId);
+                  if (paired) {
+                    removePairByIndex(paired.pairIndex);
+                    return;
+                  }
                   if (!matchLeftId) return;
-                  if (byLeft.has(matchLeftId) || byRight.has(rightId)) return;
+                  if (byLeft.has(matchLeftId)) return;
 
                   const used = new Set(matchPairs.map((p) => p.pairIndex));
                   let nextIndex = 0;
@@ -596,15 +677,6 @@ export default function TheoryLessonPage() {
                   setMatchLeftId(null);
                 };
 
-                const getPairClasses = (pairIndex: number) =>
-                  palette[pairIndex % palette.length];
-
-                const removePairByIndex = (pairIndex: number) => {
-                  if (feedback || matchingMut.isPending) return;
-                  setMatchPairs((prev) => prev.filter((p) => p.pairIndex !== pairIndex));
-                  setMatchLeftId(null);
-                };
-
                 const canSubmit = matchPairs.length === left.length;
 
                 return (
@@ -614,10 +686,6 @@ export default function TheoryLessonPage() {
                       {left.map((opt, i) => {
                         const paired = byLeft.get(opt.id);
                         const active = matchLeftId === opt.id;
-                        const disabled =
-                          !pickable ||
-                          paired != null ||
-                          (lockOtherLeft && !active);
                         const pairCls =
                           paired != null
                             ? getPairClasses(paired.pairIndex)
@@ -626,7 +694,7 @@ export default function TheoryLessonPage() {
                           <button
                             key={opt.id}
                             type="button"
-                            disabled={disabled}
+                            disabled={!pickable}
                             onClick={() => onPickLeft(opt.id)}
                             className={clsx(
                               'flex items-center justify-between gap-2 rounded-2xl border-2 px-3 py-3 text-left shadow-sm transition',
@@ -634,22 +702,15 @@ export default function TheoryLessonPage() {
                               paired != null && pairCls,
                               active &&
                                 'border-blue-500 ring-2 ring-blue-300/40 dark:ring-blue-400/20',
-                              disabled && 'opacity-70',
+                              !pickable && 'opacity-70',
                             )}
                           >
                             <span className="min-w-0 flex-1 font-bold text-slate-900 dark:text-white">
                               {String.fromCharCode(65 + i)}. {opt.optionText}
                             </span>
                             {paired != null && (
-                              <span
-                                className="text-xs font-extrabold text-slate-600"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  removePairByIndex(paired.pairIndex);
-                                }}
-                              >
-                                #{paired.pairIndex + 1}
+                              <span className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                                #{paired.pairIndex + 1} ✕
                               </span>
                             )}
                           </button>
@@ -660,7 +721,8 @@ export default function TheoryLessonPage() {
                     <div className="flex flex-col gap-2">
                       {right.map((opt, i) => {
                         const paired = byRight.get(opt.id);
-                        const disabled = !pickable || !matchLeftId || paired != null;
+                        const dimmed =
+                          !pickable || (!matchLeftId && paired == null);
                         const pairCls =
                           paired != null
                             ? getPairClasses(paired.pairIndex)
@@ -669,28 +731,21 @@ export default function TheoryLessonPage() {
                           <button
                             key={opt.id}
                             type="button"
-                            disabled={disabled}
+                            disabled={!pickable}
                             onClick={() => onPickRight(opt.id)}
                             className={clsx(
                               'flex items-center justify-between gap-2 rounded-2xl border-2 px-3 py-3 text-left shadow-sm transition',
                               'border-slate-200 bg-white dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]',
                               paired != null && pairCls,
-                              disabled && 'opacity-70',
+                              dimmed && 'opacity-70',
                             )}
                           >
                             <span className="min-w-0 flex-1 font-bold text-slate-900 dark:text-white">
                               {String.fromCharCode(65 + i)}. {opt.matchText ?? ''}
                             </span>
                             {paired != null && (
-                              <span
-                                className="text-xs font-extrabold text-slate-600"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  removePairByIndex(paired.pairIndex);
-                                }}
-                              >
-                                #{paired.pairIndex + 1}
+                              <span className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
+                                #{paired.pairIndex + 1} ✕
                               </span>
                             )}
                           </button>
@@ -757,7 +812,7 @@ export default function TheoryLessonPage() {
                   .map((opt, oi) => {
                     const letter = String.fromCharCode(65 + oi);
                     const pickable =
-                      !feedback && !answerMut.isPending && canDoQuiz;
+                      !feedback && !answerMut.isPending && canDoQuiz && !blocked;
                     const showResult = Boolean(feedback);
                     const isWrongPick =
                       showResult &&
@@ -863,7 +918,13 @@ export default function TheoryLessonPage() {
               </motion.button>
             )}
 
-            {feedback && (
+            {submitError && !feedback && !blocked ? (
+              <p className="mt-3 rounded-2xl border-2 border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-900 dark:border-amber-400/40 dark:bg-amber-950/30 dark:text-amber-200">
+                {submitError}
+              </p>
+            ) : null}
+
+            {(feedback || blocked) && (
               <motion.div
                 initial={{ opacity: 0, y: 10, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -884,14 +945,20 @@ export default function TheoryLessonPage() {
                   <p className="font-semibold">
                     {feedback === 'correct'
                       ? t({ uz: 'To‘g‘ri!', en: 'Correct!', ru: 'Верно!' })
-                      : t({ uz: 'Noto‘g‘ri', en: 'Wrong', ru: 'Неверно' })}
+                      : feedback === 'wrong'
+                        ? t({ uz: 'Noto‘g‘ri', en: 'Wrong', ru: 'Неверно' })
+                        : t({
+                            uz: 'Jon tugadi',
+                            en: 'No lives left',
+                            ru: 'Жизни закончились',
+                          })}
                   </p>
                 </div>
                 <motion.button
                   type="button"
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
-                    if (feedback === 'wrong' && outOfLives && !devMode) {
+                    if (blocked) {
                       navigate('/learn', { replace: true });
                       return;
                     }
@@ -904,11 +971,11 @@ export default function TheoryLessonPage() {
                       : 'bg-rose-600 text-white dark:bg-[var(--learn-red)] dark:shadow-[0_6px_20px_rgba(255,71,87,0.25)]',
                   )}
                 >
-                  {feedback === 'wrong' && outOfLives && !devMode
+                  {blocked
                     ? t({ uz: 'Bosh menyu', en: 'Main menu', ru: 'Главное меню' })
                     : t({ uz: 'Keyingisi', en: 'Next', ru: 'Далее' })}
                 </motion.button>
-                {feedback === 'wrong' && outOfLives && !devMode ? (
+                {blocked ? (
                   <div className="mt-3 flex items-center justify-center gap-2 text-sm text-rose-700/80 dark:text-rose-200/80">
                     <Home className="h-4 w-4" />
                     <span>
