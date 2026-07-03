@@ -4,16 +4,16 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import {
   BadgeCheck,
-  Heart,
-  HeartCrack,
   PartyPopper,
   Home,
   Sparkles,
   XCircle,
+  Zap,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useDevMode } from '@/hooks/useDevMode';
+import { useEnergyCountdown } from '@/hooks/useEnergyCountdown';
 import mobileApi from '@/services/api';
 import type {
   MobileNazariyaSection,
@@ -61,8 +61,8 @@ export default function TheoryLessonPage() {
     queryFn: () => mobileApi.getMyProgress(),
   });
 
-  // Hearts hali yuklanmagan bo'lsa (undefined) foydalanuvchini bloklamaymiz —
-  // aks holda sekin internetda noto'g'ri "Jon tugagan" xabari ko'rinadi.
+  // Energiya hali yuklanmagan bo'lsa (undefined) foydalanuvchini bloklamaymiz —
+  // aks holda sekin internetda noto'g'ri "Energiya tugadi" xabari ko'rinadi.
   const heartsKnown = progressQuery.isSuccess;
   const heartsCount = progressQuery.data?.hearts?.heartsCount ?? 0;
   const heartsMax = progressQuery.data?.hearts?.maxHearts ?? 5;
@@ -73,7 +73,14 @@ export default function TheoryLessonPage() {
 
   const noLives = heartsKnown && heartsCount <= 0;
   const canDoQuiz = devMode || !heartsKnown || heartsCount > 0;
-  const blocked = outOfLives && !devMode;
+  // Energiya soatlik regen bilan qaytadi — heartsCount > 0 bo'lsa blok yechiladi.
+  const blocked = outOfLives && heartsCount <= 0 && !devMode;
+
+  // Keyingi +1 energiya taymeri (faqat energiya tugaganda ko'rsatiladi).
+  // Taymer tugaganda progress-me yangilanadi va blok avtomatik ochiladi.
+  const regenCountdown = useEnergyCountdown(
+    noLives ? progressQuery.data?.hearts?.nextRegenAt : null,
+  );
 
   // Serverdan kelgan hearts holatini darhol cache'ga yozamiz — eskirgan
   // qiymat asosida noto'g'ri qaror qabul qilinmasin.
@@ -217,9 +224,10 @@ export default function TheoryLessonPage() {
       );
       setLastXp((x) => x + res.xpEarned);
       applyHearts(res.hearts);
+      // Yangi model: har urinish 1 energiya sarflaydi (to'g'ri javob ham).
       // Serverdan kelgan aniq qiymat asosida hisoblanadi (eskirgan cache emas).
       const heartsLeft = res.hearts ? res.hearts.heartsCount : heartsCount - 1;
-      if (!res.isCorrect && heartsLeft <= 0) {
+      if (heartsLeft <= 0) {
         setOutOfLives(true);
       }
       queryClient.invalidateQueries({ queryKey: ['progress-me'] });
@@ -244,7 +252,7 @@ export default function TheoryLessonPage() {
       setLastXp((x) => x + res.xpEarned);
       applyHearts(res.hearts);
       const heartsLeft = res.hearts ? res.hearts.heartsCount : heartsCount - 1;
-      if (!res.isCorrect && heartsLeft <= 0) {
+      if (heartsLeft <= 0) {
         setOutOfLives(true);
       }
       queryClient.invalidateQueries({ queryKey: ['progress-me'] });
@@ -521,12 +529,18 @@ export default function TheoryLessonPage() {
               </>
             )}
             {noLives && !devMode && (
-              <p className="mt-3 text-center text-sm text-rose-600 dark:text-[var(--learn-red)]">
-                {t({
-                  uz: 'Jon tugagan. Savollar ishlash uchun ertaga qayta urinib ko‘ring.',
-                  en: 'No lives left. Try again tomorrow.',
-                  ru: 'Жизни закончились. Попробуйте завтра.',
-                })}
+              <p className="mt-3 text-center text-sm text-amber-600 dark:text-[var(--learn-gold)]">
+                {regenCountdown
+                  ? t({
+                      uz: `Energiya tugadi. Keyingi energiya: ${regenCountdown}`,
+                      en: `Out of energy. Next energy in: ${regenCountdown}`,
+                      ru: `Энергия закончилась. Следующая через: ${regenCountdown}`,
+                    })
+                  : t({
+                      uz: 'Energiya tugadi. Har soatda 1 ta energiya tiklanadi.',
+                      en: 'Out of energy. You get 1 energy every hour.',
+                      ru: 'Энергия закончилась. +1 энергия каждый час.',
+                    })}
               </p>
             )}
           </motion.div>
@@ -562,23 +576,23 @@ export default function TheoryLessonPage() {
                 {qIndex + 1} / {questions.length}
               </span>
               <span
-                className="inline-flex items-center gap-1 rounded-full border-2 border-rose-200/80 bg-rose-50 px-2.5 py-1.5 shadow-sm dark:border-[var(--learn-red)]/45 dark:bg-[#2d1218]/70 dark:shadow-[0_0_16px_rgba(255,71,87,0.12)]"
+                className="inline-flex items-center gap-1 rounded-full border-2 border-amber-200/80 bg-amber-50 px-2.5 py-1.5 shadow-sm dark:border-[var(--learn-gold)]/45 dark:bg-[#2d2410]/70 dark:shadow-[0_0_16px_rgba(255,196,0,0.12)]"
                 title={t({
-                  uz: 'Qolgan urinishlar',
-                  en: 'Attempts left',
-                  ru: 'Осталось попыток',
+                  uz: 'Energiya (har urinish 1 energiya)',
+                  en: 'Energy (each attempt costs 1)',
+                  ru: 'Энергия (каждая попытка — 1)',
                 })}
               >
                 {Array.from({ length: heartsUi.cnt }).map((_, i) => (
-                  <Heart
+                  <Zap
                     key={`h-${i}`}
-                    className="h-4 w-4 fill-current text-rose-500 dark:text-[var(--learn-red)]"
+                    className="h-4 w-4 fill-current text-amber-500 dark:text-[var(--learn-gold)]"
                   />
                 ))}
                 {Array.from({ length: heartsUi.empty }).map((_, i) => (
-                  <HeartCrack
+                  <Zap
                     key={`e-${i}`}
-                    className="h-4 w-4 text-slate-400 opacity-70 dark:text-[var(--learn-muted)]"
+                    className="h-4 w-4 text-slate-400 opacity-50 dark:text-[var(--learn-muted)]"
                   />
                 ))}
               </span>
@@ -948,9 +962,9 @@ export default function TheoryLessonPage() {
                       : feedback === 'wrong'
                         ? t({ uz: 'Noto‘g‘ri', en: 'Wrong', ru: 'Неверно' })
                         : t({
-                            uz: 'Jon tugadi',
-                            en: 'No lives left',
-                            ru: 'Жизни закончились',
+                            uz: 'Energiya tugadi',
+                            en: 'Out of energy',
+                            ru: 'Энергия закончилась',
                           })}
                   </p>
                 </div>
@@ -979,11 +993,17 @@ export default function TheoryLessonPage() {
                   <div className="mt-3 flex items-center justify-center gap-2 text-sm text-rose-700/80 dark:text-rose-200/80">
                     <Home className="h-4 w-4" />
                     <span>
-                      {t({
-                        uz: 'Jon tugadi. Davom etish uchun ertaga qayting.',
-                        en: 'No lives left. Come back tomorrow.',
-                        ru: 'Жизни закончились. Возвращайтесь завтра.',
-                      })}
+                      {regenCountdown
+                        ? t({
+                            uz: `Energiya tugadi. Keyingi energiya: ${regenCountdown}`,
+                            en: `Out of energy. Next energy in: ${regenCountdown}`,
+                            ru: `Энергия закончилась. Следующая через: ${regenCountdown}`,
+                          })
+                        : t({
+                            uz: 'Energiya tugadi. Har soatda 1 ta energiya tiklanadi.',
+                            en: 'Out of energy. You get 1 energy every hour.',
+                            ru: 'Энергия закончилась. +1 энергия каждый час.',
+                          })}
                     </span>
                   </div>
                 ) : null}

@@ -70,11 +70,15 @@ export default function LearnHomePage() {
           <p className="text-xs text-slate-500">
             {dailyPlanQuery.data
               ? t({
-                  uz: `${dailyPlanQuery.data.answeredCount}/${dailyPlanQuery.data.questionCount} savol • ${dailyPlanQuery.data.completionPercent}%`,
-                  en: `${dailyPlanQuery.data.answeredCount}/${dailyPlanQuery.data.questionCount} questions • ${dailyPlanQuery.data.completionPercent}%`,
-                  ru: `${dailyPlanQuery.data.answeredCount}/${dailyPlanQuery.data.questionCount} вопросов • ${dailyPlanQuery.data.completionPercent}%`,
+                  uz: `${dailyPlanQuery.data.correctCount ?? 0}/${dailyPlanQuery.data.dailyGoalCorrect ?? 10} to‘g‘ri javob • ${dailyPlanQuery.data.completionPercent}%`,
+                  en: `${dailyPlanQuery.data.correctCount ?? 0}/${dailyPlanQuery.data.dailyGoalCorrect ?? 10} correct • ${dailyPlanQuery.data.completionPercent}%`,
+                  ru: `${dailyPlanQuery.data.correctCount ?? 0}/${dailyPlanQuery.data.dailyGoalCorrect ?? 10} верных • ${dailyPlanQuery.data.completionPercent}%`,
                 })
-              : t({ uz: 'Kamida 10 ta savol', en: 'At least 10 questions', ru: 'Минимум 10 вопросов' })}
+              : t({
+                  uz: 'Kuniga 10 ta to‘g‘ri javob',
+                  en: '10 correct answers a day',
+                  ru: '10 верных ответов в день',
+                })}
           </p>
         </div>
       </Link>

@@ -119,8 +119,12 @@ export type DailyPlanResponse = {
   planDate: string;
   organizationId: string | null;
   targetQuestions: number;
+  /** Kunlik maqsad: shu kunda nechta TO'G'RI javob kerak (10). */
+  dailyGoalCorrect: number;
   questionCount: number;
   answeredCount: number;
+  /** Bugun to'g'ri javob berilgan (har xil) savollar soni. */
+  correctCount: number;
   completionPercent: number;
   completed: boolean;
   questions: DailyPlanQuestion[];

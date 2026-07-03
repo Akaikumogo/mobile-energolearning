@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
-import { CheckCircle2, ClipboardList, HeartCrack, XCircle } from 'lucide-react';
+import { CheckCircle2, ClipboardList, XCircle, ZapOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useEnergyCountdown } from '@/hooks/useEnergyCountdown';
 import mobileApi from '@/services/api';
 import type { HeartsState, MyProgressResponse } from '@/services/api';
 import { queryClient } from '@/queryClient';
@@ -16,13 +17,24 @@ export default function DailyPlanPage() {
   const [qIndex, setQIndex] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [pickedOptionId, setPickedOptionId] = useState<string | null>(null);
-  const [outOfLives, setOutOfLives] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const planQuery = useQuery({
     queryKey: ['daily-plan-today'],
     queryFn: () => mobileApi.getDailyPlanToday(),
   });
+
+  // Energiya holati serverdan (cache orqali) — taymer tugasa avtomatik
+  // yangilanadi va bloklash yechiladi.
+  const progressQuery = useQuery({
+    queryKey: ['progress-me'],
+    queryFn: () => mobileApi.getMyProgress(),
+  });
+  const hearts = progressQuery.data?.hearts ?? null;
+  const outOfEnergy = hearts != null && hearts.heartsCount <= 0;
+  const regenCountdown = useEnergyCountdown(
+    outOfEnergy ? hearts?.nextRegenAt : null,
+  );
 
   const applyHearts = (hearts: HeartsState | null | undefined) => {
     if (!hearts) return;
@@ -43,10 +55,9 @@ export default function DailyPlanPage() {
       setSubmitError(null);
       setFeedback(res.isCorrect ? 'correct' : 'wrong');
       setPickedOptionId(variables.selectedOptionId);
+      // Yangi model: har urinish 1 energiya sarflaydi — hearts har doim
+      // yangilanadi, 0 ga tushsa `outOfEnergy` o'zi bloklaydi.
       applyHearts(res.hearts);
-      if (!res.isCorrect && res.hearts && res.hearts.heartsCount <= 0) {
-        setOutOfLives(true);
-      }
       queryClient.invalidateQueries({ queryKey: ['daily-plan-today'] });
       queryClient.invalidateQueries({ queryKey: ['progress-me'] });
     },
@@ -55,7 +66,6 @@ export default function DailyPlanPage() {
       const data = axErr?.response?.data;
       if (axErr?.response?.status === 403 && data?.code === 'NO_HEARTS_LEFT') {
         applyHearts(data.state);
-        setOutOfLives(true);
         setSubmitError(null);
         return;
       }
@@ -75,7 +85,7 @@ export default function DailyPlanPage() {
 
   const onPick = (optionId: string) => {
     if (!question || feedback || answerMut.isPending || question.answered) return;
-    if (outOfLives) return;
+    if (outOfEnergy) return;
     setSubmitError(null);
     answerMut.mutate({ questionId: question.id, selectedOptionId: optionId });
   };
@@ -121,11 +131,18 @@ export default function DailyPlanPage() {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-[var(--learn-blue)]">
-              {t({ uz: 'Bugungi plan', en: 'Today\'s plan', ru: 'План на сегодня' })}
+              {t({ uz: 'Bugungi maqsad', en: 'Today\'s goal', ru: 'Цель на сегодня' })}
             </p>
             <p className="text-lg font-bold text-slate-900 dark:text-white">
-              {plan.answeredCount} / {plan.questionCount}{' '}
-              {t({ uz: 'savol', en: 'questions', ru: 'вопросов' })}
+              {plan.correctCount ?? 0} / {plan.dailyGoalCorrect ?? plan.targetQuestions}{' '}
+              {t({ uz: 'to‘g‘ri javob', en: 'correct answers', ru: 'верных ответов' })}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {t({
+                uz: `Jami urinilgan savollar: ${plan.answeredCount}`,
+                en: `Total questions attempted: ${plan.answeredCount}`,
+                ru: `Всего вопросов отвечено: ${plan.answeredCount}`,
+              })}
             </p>
           </div>
         </div>
@@ -205,17 +222,23 @@ export default function DailyPlanPage() {
                 : t({ uz: 'Noto`g`ri', en: 'Wrong', ru: 'Неверно' })}
             </div>
           )}
-          {outOfLives && (
-            <div className="flex items-center gap-2 rounded-xl bg-rose-100 px-4 py-3 text-sm font-semibold text-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
-              <HeartCrack className="h-5 w-5 shrink-0" />
-              {t({
-                uz: 'Jon tugadi. Savollarni davom ettirish uchun ertaga qayting.',
-                en: 'No lives left. Come back tomorrow to continue.',
-                ru: 'Жизни закончились. Возвращайтесь завтра.',
-              })}
+          {outOfEnergy && (
+            <div className="flex items-center gap-2 rounded-xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+              <ZapOff className="h-5 w-5 shrink-0" />
+              {regenCountdown
+                ? t({
+                    uz: `Energiya tugadi. Keyingi energiya: ${regenCountdown}`,
+                    en: `Out of energy. Next energy in: ${regenCountdown}`,
+                    ru: `Энергия закончилась. Следующая через: ${regenCountdown}`,
+                  })
+                : t({
+                    uz: 'Energiya tugadi. Har soatda 1 ta energiya tiklanadi.',
+                    en: 'Out of energy. You get 1 energy every hour.',
+                    ru: 'Энергия закончилась. +1 энергия каждый час.',
+                  })}
             </div>
           )}
-          {submitError && !outOfLives && (
+          {submitError && !outOfEnergy && (
             <div className="flex items-center gap-2 rounded-xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
               <XCircle className="h-5 w-5 shrink-0" />
               {submitError}

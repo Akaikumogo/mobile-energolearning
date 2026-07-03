@@ -3,15 +3,15 @@ import { Navigate, Outlet, NavLink } from 'react-router-dom';
 import {
   Bot,
   Crown,
-  Heart,
-  HeartCrack,
   Home,
   LibraryBig,
   Trophy,
   User,
+  Zap,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useEnergyCountdown } from '@/hooks/useEnergyCountdown';
 import mobileApi from '@/services/api';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import {
@@ -32,8 +32,8 @@ export default function LearnLayout() {
     enabled: !blockForOrg,
   });
 
-  // Hearts hali yuklanmagan bo'lsa to'liq ko'rsatamiz — 5 ta singan yurak
-  // ko'rinib qolmasin.
+  // Energiya hali yuklanmagan bo'lsa to'liq ko'rsatamiz — 5 ta o'chgan
+  // chaqmoq ko'rinib qolmasin.
   const heartsKnown = progress?.hearts != null;
   const heartsCount = progress?.hearts?.heartsCount ?? 0;
   const heartsMax = progress?.hearts?.maxHearts ?? 5;
@@ -43,6 +43,13 @@ export default function LearnLayout() {
       : heartsMax;
     return { cnt, empty: Math.max(0, heartsMax - cnt) };
   }, [heartsKnown, heartsCount, heartsMax]);
+
+  // Keyingi +1 energiya taymeri (to'liq bo'lsa null keladi).
+  const regenCountdown = useEnergyCountdown(
+    heartsKnown && heartsCount < heartsMax
+      ? progress?.hearts?.nextRegenAt
+      : null,
+  );
 
   const globalRankQuery = useQuery({
     queryKey: ['leaderboard-global-me'],
@@ -81,25 +88,30 @@ export default function LearnLayout() {
               </p>
             ) : null}
             <span
-              className="inline-flex items-center gap-0.5 rounded-full border border-rose-200/80 bg-rose-50/90 px-2 py-0.5 dark:border-[var(--learn-red)]/45 dark:bg-[#2d1218]/70"
+              className="inline-flex items-center gap-0.5 rounded-full border border-amber-200/80 bg-amber-50/90 px-2 py-0.5 dark:border-[var(--learn-gold)]/45 dark:bg-[#2d2410]/70"
               title={t({
-                uz: 'Jonlar',
-                en: 'Lives',
-                ru: 'Жизни',
+                uz: 'Energiya (har soatda +1)',
+                en: 'Energy (+1 every hour)',
+                ru: 'Энергия (+1 каждый час)',
               })}
             >
               {Array.from({ length: heartsUi.cnt }).map((_, i) => (
-                <Heart
+                <Zap
                   key={`h-${i}`}
-                  className="h-3.5 w-3.5 fill-current text-rose-500 dark:text-[var(--learn-red)]"
+                  className="h-3.5 w-3.5 fill-current text-amber-500 dark:text-[var(--learn-gold)]"
                 />
               ))}
               {Array.from({ length: heartsUi.empty }).map((_, i) => (
-                <HeartCrack
+                <Zap
                   key={`e-${i}`}
-                  className="h-3.5 w-3.5 text-slate-400 opacity-70 dark:text-[var(--learn-muted)]"
+                  className="h-3.5 w-3.5 text-slate-400 opacity-50 dark:text-[var(--learn-muted)]"
                 />
               ))}
+              {regenCountdown ? (
+                <span className="ml-1 text-[10px] font-bold tabular-nums text-amber-700 dark:text-[var(--learn-gold)]">
+                  +1 {regenCountdown}
+                </span>
+              ) : null}
             </span>
           </div>
         </div>
