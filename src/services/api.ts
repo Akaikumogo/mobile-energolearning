@@ -125,9 +125,31 @@ export type DailyPlanResponse = {
   answeredCount: number;
   /** Bugun to'g'ri javob berilgan (har xil) savollar soni. */
   correctCount: number;
+  /** Urinilgan, lekin (hali) to'g'ri topilmagan savollar soni. */
+  wrongCount: number;
   completionPercent: number;
   completed: boolean;
+  /** Yangi modelda bo'sh — savollar next-question orqali bittalab keladi. */
   questions: DailyPlanQuestion[];
+};
+
+export type DailyPlanProgress = {
+  planDate: string;
+  answeredCount: number;
+  correctCount: number;
+  wrongCount: number;
+  dailyGoalCorrect: number;
+  completionPercent: number;
+  completed: boolean;
+};
+
+export type DailyPlanNextResponse = {
+  /** Bugungi maqsad bajarilgan — plan quiz yopiladi. */
+  done: boolean;
+  /** Pool tugadi: 24 soat ichida ishlanmagan mos savol qolmadi. */
+  exhausted: boolean;
+  question: MobileQuestion | null;
+  progress: DailyPlanProgress;
 };
 
 export type MatchingPair = {
@@ -555,6 +577,14 @@ class MobileApiService {
   async getDailyPlanToday(): Promise<DailyPlanResponse> {
     const response = await this.api.get<DailyPlanResponse>(
       '/mobile/daily-plan/today',
+    );
+    return response.data;
+  }
+
+  /** Kunlik plan: keyingi random savol (lavozimga mos, 24 soatda takrorlanmaydi). */
+  async getDailyPlanNextQuestion(): Promise<DailyPlanNextResponse> {
+    const response = await this.api.get<DailyPlanNextResponse>(
+      '/mobile/daily-plan/next-question',
     );
     return response.data;
   }
