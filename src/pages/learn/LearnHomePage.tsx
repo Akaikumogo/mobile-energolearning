@@ -143,7 +143,11 @@ export default function LearnHomePage() {
                     />
                   </div>
                   <p className="mt-1 text-xs text-slate-500">
-                    {level.completionPercent}%
+                    {t({
+                      uz: `${level.completionPercent}% • ${level.correctAnswersCount ?? 0}/${level.attemptsCount ?? 0} to‘g‘ri / urinish`,
+                      en: `${level.completionPercent}% • ${level.correctAnswersCount ?? 0}/${level.attemptsCount ?? 0} correct / attempts`,
+                      ru: `${level.completionPercent}% • ${level.correctAnswersCount ?? 0}/${level.attemptsCount ?? 0} верно / попыток`,
+                    })}
                   </p>
                 </div>
               </Link>

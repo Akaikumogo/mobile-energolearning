@@ -57,6 +57,8 @@ export type ProgressLevelItem = {
   isLocked: boolean;
   isCompleted: boolean;
   completionPercent: number;
+  correctAnswersCount: number;
+  attemptsCount: number;
   completedAt: string | null;
 };
 
