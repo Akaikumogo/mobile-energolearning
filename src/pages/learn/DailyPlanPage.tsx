@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import {
+  BookOpen,
   CheckCircle2,
   ClipboardList,
   PartyPopper,
@@ -77,9 +79,9 @@ export default function DailyPlanPage() {
   const hearts = progressQuery.data?.hearts ?? null;
   const heartsMax = hearts?.maxHearts ?? 5;
   const heartsCount = hearts?.heartsCount ?? heartsMax;
-  const outOfEnergy = hearts != null && hearts.heartsCount <= 0;
+  const noEnergyForWrong = hearts != null && hearts.heartsCount <= 0;
   const regenCountdown = useEnergyCountdown(
-    hearts && hearts.heartsCount < heartsMax ? hearts.nextRegenAt : null,
+    noEnergyForWrong ? hearts?.nextRegenAt : null,
   );
 
   const applyHearts = (h: HeartsState | null | undefined) => {
@@ -155,14 +157,20 @@ export default function DailyPlanPage() {
   // Server haqiqati + hozirgi javob (feedback paytida serverdan qayta
   // so'ralmaydi, shu sababli optimistik +1).
   const serverCorrect = next?.progress.correctCount ?? plan?.correctCount ?? 0;
+  const serverExtra =
+    next?.progress.extraCorrectCount ?? plan?.extraCorrectCount ?? 0;
   const displayCorrect = Math.min(
     goal,
-    serverCorrect + (feedback === 'correct' ? 1 : 0),
+    serverCorrect + (feedback === 'correct' && serverCorrect < goal ? 1 : 0),
   );
+  const displayExtra =
+    serverExtra +
+    (feedback === 'correct' && serverCorrect >= goal ? 1 : 0);
   const displayPercent = Math.min(100, Math.round((displayCorrect / goal) * 100));
+  const planCompleted = plan?.completed ?? displayCorrect >= goal;
 
   const isSubmitting = answerMut.isPending || matchingMut.isPending;
-  const pickable = !feedback && !isSubmitting && !outOfEnergy;
+  const pickable = !feedback && !isSubmitting;
 
   const resetQuestionState = () => {
     setFeedback(null);
@@ -206,7 +214,7 @@ export default function DailyPlanPage() {
   }
 
   // ─── Umumiy: energiya banneri ────────────────────────────────
-  const energyBanner = outOfEnergy ? (
+  const energyBanner = noEnergyForWrong ? (
     <div className="flex items-center gap-2 rounded-xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
       <ZapOff className="h-5 w-5 shrink-0" />
       {regenCountdown
@@ -291,38 +299,77 @@ export default function DailyPlanPage() {
         </div>
 
         <div className="mt-5 space-y-3">
-          {plan.completed ? (
-            <div className="rounded-3xl border-2 border-emerald-300/80 bg-emerald-50 p-5 text-center dark:border-emerald-500/40 dark:bg-emerald-950/30">
-              <PartyPopper className="mx-auto h-9 w-9 text-emerald-600 dark:text-emerald-300" />
-              <p className="mt-2 font-bold text-emerald-800 dark:text-emerald-200">
+          {planCompleted ? (
+            <>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+                className="rounded-3xl border-2 border-emerald-300/80 bg-gradient-to-br from-emerald-50 to-teal-50 p-5 text-center dark:border-emerald-500/40 dark:from-emerald-950/40 dark:to-teal-950/30"
+              >
+                <motion.div
+                  animate={{ rotate: [0, -8, 8, -4, 4, 0] }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                >
+                  <PartyPopper className="mx-auto h-10 w-10 text-emerald-600 dark:text-emerald-300" />
+                </motion.div>
+                <p className="mt-2 text-lg font-bold text-emerald-800 dark:text-emerald-200">
+                  {t({
+                    uz: 'Bugungi plan bajarildi! 🎉',
+                    en: 'Daily plan completed! 🎉',
+                    ru: 'План на сегодня выполнен! 🎉',
+                  })}
+                </p>
+                <p className="mt-1 text-sm text-emerald-700/90 dark:text-emerald-300/80">
+                  {t({
+                    uz: `${goal}/${goal} to‘g‘ri javob`,
+                    en: `${goal}/${goal} correct answers`,
+                    ru: `${goal}/${goal} верных ответов`,
+                  })}
+                  {(plan?.extraCorrectCount ?? 0) > 0
+                    ? t({
+                        uz: ` • +${plan?.extraCorrectCount} plandan tashqari`,
+                        en: ` • +${plan?.extraCorrectCount} beyond plan`,
+                        ru: ` • +${plan?.extraCorrectCount} сверх плана`,
+                      })
+                    : ''}
+                </p>
+              </motion.div>
+              <Link
+                to="/learn"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-blue-200 bg-white py-4 text-base font-bold text-blue-700 shadow-sm transition dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-[var(--learn-blue)]"
+              >
+                <BookOpen className="h-5 w-5" />
                 {t({
-                  uz: 'Bugungi plan bajarildi! 🎉',
-                  en: 'Daily plan completed! 🎉',
-                  ru: 'План на сегодня выполнен! 🎉',
+                  uz: 'Modullarga o‘tish',
+                  en: 'Go to modules',
+                  ru: 'К модулям',
                 })}
-              </p>
-              <p className="mt-1 text-xs text-emerald-700/80 dark:text-emerald-300/70">
-                {t({
-                  uz: 'Ertaga yangi savollar bilan davom etasiz.',
-                  en: 'Continue tomorrow with new questions.',
-                  ru: 'Продолжите завтра с новыми вопросами.',
-                })}
-              </p>
-            </div>
+              </Link>
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.98 }}
+                onClick={startQuiz}
+                className="w-full rounded-2xl bg-blue-600 py-4 text-base font-bold text-white shadow-lg shadow-blue-600/25 dark:bg-[var(--learn-blue)]"
+              >
+                <span className="inline-flex items-center justify-center gap-2">
+                  <Play className="h-5 w-5" />
+                  {t({
+                    uz: 'Qo‘shimcha savollar',
+                    en: 'Extra questions',
+                    ru: 'Дополнительные вопросы',
+                  })}
+                </span>
+              </motion.button>
+            </>
           ) : (
             <>
               {energyBanner}
               <motion.button
                 type="button"
                 whileTap={{ scale: 0.98 }}
-                disabled={outOfEnergy}
                 onClick={startQuiz}
-                className={clsx(
-                  'w-full rounded-2xl py-4 text-base font-bold shadow-md transition',
-                  !outOfEnergy
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25 dark:bg-[var(--learn-blue)]'
-                    : 'cursor-not-allowed bg-slate-300 text-slate-600 dark:bg-[var(--learn-card)] dark:text-[var(--learn-muted)]',
-                )}
+                className="w-full rounded-2xl py-4 text-base font-bold shadow-md transition bg-blue-600 text-white shadow-lg shadow-blue-600/25 dark:bg-[var(--learn-blue)]"
               >
                 <span className="inline-flex items-center justify-center gap-2">
                   <Play className="h-5 w-5" />
@@ -364,6 +411,11 @@ export default function DailyPlanPage() {
             {displayCorrect}
           </motion.span>
           <span>/ {goal}</span>
+          {displayExtra > 0 && (
+            <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+              +{displayExtra}
+            </span>
+          )}
 
           {/* "+1 plan" — coin-earn uslubidagi uchuvchi chip */}
           <AnimatePresence>
@@ -387,9 +439,9 @@ export default function DailyPlanPage() {
           transition={{ duration: 0.4 }}
           className="inline-flex items-center gap-1 rounded-full border-2 border-amber-200/80 bg-amber-50 px-2.5 py-1.5 shadow-sm dark:border-[var(--learn-gold)]/45 dark:bg-[#2d2410]/70"
           title={t({
-            uz: 'Energiya (har urinish 1 energiya)',
-            en: 'Energy (each attempt costs 1)',
-            ru: 'Энергия (каждая попытка — 1)',
+            uz: 'Energiya (har xato javob 1 energiya)',
+            en: 'Energy (each wrong answer costs 1)',
+            ru: 'Энергия (каждая ошибка — 1)',
           })}
         >
           {Array.from({ length: Math.max(0, Math.min(heartsMax, heartsCount)) }).map((_, i) => (
@@ -428,39 +480,6 @@ export default function DailyPlanPage() {
             {t({ uz: 'Qayta urinish', en: 'Retry', ru: 'Повторить' })}
           </button>
         </div>
-      ) : next?.done ? (
-        /* Maqsad bajarildi */
-        <motion.div
-          initial={{ opacity: 0, scale: 0.92 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 320, damping: 22 }}
-          className="flex flex-col items-center py-10 text-center"
-        >
-          <div className="mb-4 rounded-3xl border-2 border-emerald-300/80 bg-emerald-50 p-5 text-emerald-600 shadow-md dark:border-emerald-500/40 dark:bg-emerald-950/35 dark:text-emerald-300">
-            <PartyPopper className="mx-auto h-10 w-10" />
-          </div>
-          <h2 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">
-            {t({
-              uz: 'Kunlik plan bajarildi! 🎉',
-              en: 'Daily plan completed! 🎉',
-              ru: 'План выполнен! 🎉',
-            })}
-          </h2>
-          <p className="mb-6 text-sm text-slate-500">
-            {t({
-              uz: `${goal} ta to‘g‘ri javob yig‘dingiz. Ertaga yangi savollar!`,
-              en: `You collected ${goal} correct answers. New questions tomorrow!`,
-              ru: `Вы набрали ${goal} верных ответов. Завтра новые вопросы!`,
-            })}
-          </p>
-          <button
-            type="button"
-            onClick={backToSummary}
-            className="w-full rounded-2xl bg-blue-600 py-3.5 font-bold text-white"
-          >
-            {t({ uz: 'Plan sahifasiga qaytish', en: 'Back to plan', ru: 'К плану' })}
-          </button>
-        </motion.div>
       ) : next?.exhausted ? (
         /* 24 soatlik pool tugadi */
         <motion.div
@@ -658,9 +677,9 @@ export default function DailyPlanPage() {
             )}
           </AnimatePresence>
 
-          {outOfEnergy && <div className="mt-4">{energyBanner}</div>}
+          {noEnergyForWrong && <div className="mt-4">{energyBanner}</div>}
 
-          {submitError && !outOfEnergy && (
+          {submitError && !noEnergyForWrong && (
             <div className="mt-4 flex items-center gap-2 rounded-xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
               <XCircle className="h-5 w-5 shrink-0" />
               {submitError}

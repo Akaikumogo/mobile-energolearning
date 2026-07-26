@@ -125,8 +125,12 @@ export type DailyPlanResponse = {
   dailyGoalCorrect: number;
   questionCount: number;
   answeredCount: number;
-  /** Bugun to'g'ri javob berilgan (har xil) savollar soni. */
+  /** Bugun to'g'ri javob berilgan (har xil) savollar soni (reja uchun max 10). */
   correctCount: number;
+  /** Cheklanmagan to'g'ri javoblar soni. */
+  rawCorrectCount: number;
+  /** 10 tadan ortiq to'g'ri javoblar (plandan tashqari). */
+  extraCorrectCount: number;
   /** Urinilgan, lekin (hali) to'g'ri topilmagan savollar soni. */
   wrongCount: number;
   completionPercent: number;
@@ -139,6 +143,8 @@ export type DailyPlanProgress = {
   planDate: string;
   answeredCount: number;
   correctCount: number;
+  rawCorrectCount: number;
+  extraCorrectCount: number;
   wrongCount: number;
   dailyGoalCorrect: number;
   completionPercent: number;
@@ -146,7 +152,7 @@ export type DailyPlanProgress = {
 };
 
 export type DailyPlanNextResponse = {
-  /** Bugungi maqsad bajarilgan — plan quiz yopiladi. */
+  /** @deprecated Plan bajarilgandan keyin ham savollar beriladi — done ishlatilmaydi. */
   done: boolean;
   /** Pool tugadi: 24 soat ichida ishlanmagan mos savol qolmadi. */
   exhausted: boolean;

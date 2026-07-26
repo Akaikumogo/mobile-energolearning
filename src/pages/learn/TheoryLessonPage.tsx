@@ -72,8 +72,8 @@ export default function TheoryLessonPage() {
   }, [heartsCount, heartsMax]);
 
   const noLives = heartsKnown && heartsCount <= 0;
-  const canDoQuiz = devMode || !heartsKnown || heartsCount > 0;
-  // Energiya soatlik regen bilan qaytadi — heartsCount > 0 bo'lsa blok yechiladi.
+  // To'g'ri javob energiya olmaydi — 0 energiyada ham urinish mumkin.
+  const canDoQuiz = devMode || !heartsKnown || true;
   const blocked = outOfLives && heartsCount <= 0 && !devMode;
 
   // Keyingi +1 energiya taymeri (faqat energiya tugaganda ko'rsatiladi).
@@ -224,11 +224,11 @@ export default function TheoryLessonPage() {
       );
       setLastXp((x) => x + res.xpEarned);
       applyHearts(res.hearts);
-      // Yangi model: har urinish 1 energiya sarflaydi (to'g'ri javob ham).
-      // Serverdan kelgan aniq qiymat asosida hisoblanadi (eskirgan cache emas).
-      const heartsLeft = res.hearts ? res.hearts.heartsCount : heartsCount - 1;
-      if (heartsLeft <= 0) {
-        setOutOfLives(true);
+      if (!res.isCorrect) {
+        const heartsLeft = res.hearts?.heartsCount ?? heartsCount - 1;
+        if (heartsLeft <= 0) {
+          setOutOfLives(true);
+        }
       }
       queryClient.invalidateQueries({ queryKey: ['progress-me'] });
       queryClient.invalidateQueries({ queryKey: ['level-detail', levelId] });
@@ -251,9 +251,11 @@ export default function TheoryLessonPage() {
       setRevealedCorrectOptionId(null);
       setLastXp((x) => x + res.xpEarned);
       applyHearts(res.hearts);
-      const heartsLeft = res.hearts ? res.hearts.heartsCount : heartsCount - 1;
-      if (heartsLeft <= 0) {
-        setOutOfLives(true);
+      if (!res.isCorrect) {
+        const heartsLeft = res.hearts?.heartsCount ?? heartsCount - 1;
+        if (heartsLeft <= 0) {
+          setOutOfLives(true);
+        }
       }
       queryClient.invalidateQueries({ queryKey: ['progress-me'] });
       queryClient.invalidateQueries({ queryKey: ['level-detail', levelId] });
@@ -578,9 +580,9 @@ export default function TheoryLessonPage() {
               <span
                 className="inline-flex items-center gap-1 rounded-full border-2 border-amber-200/80 bg-amber-50 px-2.5 py-1.5 shadow-sm dark:border-[var(--learn-gold)]/45 dark:bg-[#2d2410]/70 dark:shadow-[0_0_16px_rgba(255,196,0,0.12)]"
                 title={t({
-                  uz: 'Energiya (har urinish 1 energiya)',
-                  en: 'Energy (each attempt costs 1)',
-                  ru: 'Энергия (каждая попытка — 1)',
+            uz: 'Energiya (har xato javob 1 energiya)',
+            en: 'Energy (each wrong answer costs 1)',
+            ru: 'Энергия (каждая ошибка — 1)',
                 })}
               >
                 {Array.from({ length: heartsUi.cnt }).map((_, i) => (
