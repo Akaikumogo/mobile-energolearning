@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
@@ -47,6 +47,8 @@ export default function DailyPlanPage() {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<'summary' | 'quiz'>('summary');
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
+  const [lastXpMessage, setLastXpMessage] = useState<string | null>(null);
+  const [lastXpEarned, setLastXpEarned] = useState(0);
   const [pickedOptionId, setPickedOptionId] = useState<string | null>(null);
   const [revealedCorrectOptionId, setRevealedCorrectOptionId] = useState<
     string | null
@@ -54,6 +56,8 @@ export default function DailyPlanPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [matchLeftId, setMatchLeftId] = useState<string | null>(null);
   const [matchPairs, setMatchPairs] = useState<MatchPairDraft[]>([]);
+  /** Double-tap / qotib qolgan UI — bir vaqtda bitta submit */
+  const submitLockRef = useRef(false);
 
   const planQuery = useQuery({
     queryKey: ['daily-plan-today'],
@@ -115,7 +119,7 @@ export default function DailyPlanPage() {
     }: {
       questionId: string;
       selectedOptionId: string;
-    }) => mobileApi.submitAnswer(questionId, selectedOptionId),
+    }) => mobileApi.submitAnswer(questionId, selectedOptionId, 'DAILY_PLAN'),
     onSuccess: (res, variables) => {
       setSubmitError(null);
       setFeedback(res.isCorrect ? 'correct' : 'wrong');
@@ -124,11 +128,16 @@ export default function DailyPlanPage() {
         res.correctOptionId ??
           (res.isCorrect ? variables.selectedOptionId : null),
       );
+      setLastXpEarned(res.xpEarned || 0);
+      setLastXpMessage(res.xpMessage ?? null);
       applyHearts(res.hearts);
       queryClient.invalidateQueries({ queryKey: ['daily-plan-today'] });
       queryClient.invalidateQueries({ queryKey: ['progress-me'] });
     },
     onError: handleSubmitError,
+    onSettled: () => {
+      submitLockRef.current = false;
+    },
   });
 
   const matchingMut = useMutation({
@@ -138,15 +147,20 @@ export default function DailyPlanPage() {
     }: {
       questionId: string;
       pairs: MatchingPair[];
-    }) => mobileApi.submitMatching(questionId, pairs),
+    }) => mobileApi.submitMatching(questionId, pairs, 'DAILY_PLAN'),
     onSuccess: (res) => {
       setSubmitError(null);
       setFeedback(res.isCorrect ? 'correct' : 'wrong');
+      setLastXpEarned(res.xpEarned || 0);
+      setLastXpMessage(res.xpMessage ?? null);
       applyHearts(res.hearts);
       queryClient.invalidateQueries({ queryKey: ['daily-plan-today'] });
       queryClient.invalidateQueries({ queryKey: ['progress-me'] });
     },
     onError: handleSubmitError,
+    onSettled: () => {
+      submitLockRef.current = false;
+    },
   });
 
   const plan = planQuery.data;
@@ -177,6 +191,8 @@ export default function DailyPlanPage() {
     setPickedOptionId(null);
     setRevealedCorrectOptionId(null);
     setSubmitError(null);
+    setLastXpMessage(null);
+    setLastXpEarned(0);
     setMatchLeftId(null);
     setMatchPairs([]);
   };
@@ -417,7 +433,7 @@ export default function DailyPlanPage() {
             </span>
           )}
 
-          {/* "+1 plan" — coin-earn uslubidagi uchuvchi chip */}
+          {/* XP / plan chip */}
           <AnimatePresence>
             {feedback === 'correct' && (
               <motion.span
@@ -428,7 +444,7 @@ export default function DailyPlanPage() {
                 transition={{ duration: 0.9, ease: 'easeOut' }}
                 className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 text-sm font-extrabold text-emerald-500"
               >
-                +1
+                {lastXpEarned > 0 ? '+10 XP' : '+1'}
               </motion.span>
             )}
           </AnimatePresence>
@@ -571,6 +587,8 @@ export default function DailyPlanPage() {
                 setMatchLeftId(null);
               }}
               onSubmit={() => {
+                if (!pickable || submitLockRef.current) return;
+                submitLockRef.current = true;
                 matchingMut.mutate({
                   questionId: question.id,
                   pairs: matchPairs
@@ -596,7 +614,8 @@ export default function DailyPlanPage() {
                       type="button"
                       disabled={!pickable}
                       onClick={() => {
-                        if (!pickable) return;
+                        if (!pickable || submitLockRef.current) return;
+                        submitLockRef.current = true;
                         setSubmitError(null);
                         answerMut.mutate({
                           questionId: question.id,
@@ -643,7 +662,17 @@ export default function DailyPlanPage() {
                     {feedback === 'correct' ? (
                       <>
                         <CheckCircle2 className="h-5 w-5" />
-                        {t({ uz: 'To‘g‘ri! +1 plan', en: 'Correct! +1 plan', ru: 'Верно! +1 план' })}
+                        {lastXpEarned > 0
+                          ? t({
+                              uz: 'To‘g‘ri! +10 XP',
+                              en: 'Correct! +10 XP',
+                              ru: 'Верно! +10 XP',
+                            })
+                          : t({
+                              uz: 'To‘g‘ri!',
+                              en: 'Correct!',
+                              ru: 'Верно!',
+                            })}
                       </>
                     ) : (
                       <>
@@ -661,6 +690,11 @@ export default function DailyPlanPage() {
                     <Zap className="h-3.5 w-3.5" /> -1
                   </span>
                 </div>
+                {feedback === 'correct' && lastXpMessage ? (
+                  <p className="mt-2 text-sm font-medium text-amber-800 dark:text-amber-200">
+                    {lastXpMessage}
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   onClick={goNext}

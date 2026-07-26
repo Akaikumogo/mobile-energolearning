@@ -658,22 +658,36 @@ class MobileApiService {
     return response.data;
   }
 
-  async submitAnswer(questionId: string, selectedOptionId: string) {
+  async submitAnswer(
+    questionId: string,
+    selectedOptionId: string,
+    source: 'DAILY_PLAN' | 'LESSON' = 'LESSON',
+  ) {
     const response = await this.api.post<{
       isCorrect: boolean;
       correctOptionId: string | null;
       xpEarned: number;
+      countsForXp?: boolean;
+      xpDeniedReason?: string | null;
+      xpMessage?: string | null;
       hearts?: HeartsState;
-    }>('/progress/answer', { questionId, selectedOptionId });
+    }>('/progress/answer', { questionId, selectedOptionId, source });
     return response.data;
   }
 
-  async submitMatching(questionId: string, pairs: MatchingPair[]) {
+  async submitMatching(
+    questionId: string,
+    pairs: MatchingPair[],
+    source: 'DAILY_PLAN' | 'LESSON' = 'LESSON',
+  ) {
     const response = await this.api.post<{
       isCorrect: boolean;
       xpEarned: number;
+      countsForXp?: boolean;
+      xpDeniedReason?: string | null;
+      xpMessage?: string | null;
       hearts?: HeartsState;
-    }>('/progress/matching', { questionId, pairs });
+    }>('/progress/matching', { questionId, pairs, source });
     return response.data;
   }
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
@@ -44,6 +44,7 @@ export default function TheoryLessonPage() {
   const [readStep, setReadStep] = useState(0);
   const [qIndex, setQIndex] = useState(0);
   const [lastXp, setLastXp] = useState(0);
+  const [lastXpMessage, setLastXpMessage] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [pickedOptionId, setPickedOptionId] = useState<string | null>(null);
   const [revealedCorrectOptionId, setRevealedCorrectOptionId] = useState<
@@ -55,7 +56,7 @@ export default function TheoryLessonPage() {
   const [matchPairs, setMatchPairs] = useState<
     Array<{ leftOptionId: string; rightOptionId: string; pairIndex: number }>
   >([]);
-
+  const submitLockRef = useRef(false);
   const progressQuery = useQuery({
     queryKey: ['progress-me'],
     queryFn: () => mobileApi.getMyProgress(),
@@ -213,7 +214,7 @@ export default function TheoryLessonPage() {
     }: {
       questionId: string;
       selectedOptionId: string;
-    }) => mobileApi.submitAnswer(questionId, selectedOptionId),
+    }) => mobileApi.submitAnswer(questionId, selectedOptionId, 'LESSON'),
     onSuccess: (res, variables) => {
       setSubmitError(null);
       setFeedback(res.isCorrect ? 'correct' : 'wrong');
@@ -222,7 +223,8 @@ export default function TheoryLessonPage() {
         res.correctOptionId ??
           (res.isCorrect ? variables.selectedOptionId : null),
       );
-      setLastXp((x) => x + res.xpEarned);
+      setLastXp((x) => x + (res.xpEarned || 0));
+      setLastXpMessage(res.xpMessage ?? null);
       applyHearts(res.hearts);
       if (!res.isCorrect) {
         const heartsLeft = res.hearts?.heartsCount ?? heartsCount - 1;
@@ -234,6 +236,9 @@ export default function TheoryLessonPage() {
       queryClient.invalidateQueries({ queryKey: ['level-detail', levelId] });
     },
     onError: handleSubmitError,
+    onSettled: () => {
+      submitLockRef.current = false;
+    },
   });
 
   const matchingMut = useMutation({
@@ -243,13 +248,14 @@ export default function TheoryLessonPage() {
     }: {
       questionId: string;
       pairs: MatchingPair[];
-    }) => mobileApi.submitMatching(questionId, pairs),
+    }) => mobileApi.submitMatching(questionId, pairs, 'LESSON'),
     onSuccess: (res) => {
       setSubmitError(null);
       setFeedback(res.isCorrect ? 'correct' : 'wrong');
       setPickedOptionId(null);
       setRevealedCorrectOptionId(null);
-      setLastXp((x) => x + res.xpEarned);
+      setLastXp((x) => x + (res.xpEarned || 0));
+      setLastXpMessage(res.xpMessage ?? null);
       applyHearts(res.hearts);
       if (!res.isCorrect) {
         const heartsLeft = res.hearts?.heartsCount ?? heartsCount - 1;
@@ -261,11 +267,16 @@ export default function TheoryLessonPage() {
       queryClient.invalidateQueries({ queryKey: ['level-detail', levelId] });
     },
     onError: handleSubmitError,
+    onSettled: () => {
+      submitLockRef.current = false;
+    },
   });
 
   const onPickOption = (optionId: string) => {
     if (!question || feedback || answerMut.isPending) return;
     if (!canDoQuiz || blocked) return;
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
     setSubmitError(null);
     answerMut.mutate({ questionId: question.id, selectedOptionId: optionId });
   };
@@ -276,6 +287,7 @@ export default function TheoryLessonPage() {
     setRevealedCorrectOptionId(null);
     setOutOfLives(false);
     setSubmitError(null);
+    setLastXpMessage(null);
     if (qIndex + 1 >= questions.length) {
       setPhase('done');
       return;
@@ -775,7 +787,8 @@ export default function TheoryLessonPage() {
                         type="button"
                         disabled={!canSubmit || matchingMut.isPending}
                         onClick={() => {
-                          if (!canSubmit) return;
+                          if (!canSubmit || submitLockRef.current) return;
+                          submitLockRef.current = true;
                           matchingMut.mutate({
                             questionId: question.id,
                             pairs: matchPairs
@@ -970,6 +983,11 @@ export default function TheoryLessonPage() {
                           })}
                   </p>
                 </div>
+                {feedback === 'correct' && lastXpMessage ? (
+                  <p className="mt-2 text-sm font-medium text-amber-800 dark:text-amber-200">
+                    {lastXpMessage}
+                  </p>
+                ) : null}
                 <motion.button
                   type="button"
                   whileTap={{ scale: 0.98 }}
@@ -1029,7 +1047,13 @@ export default function TheoryLessonPage() {
               {t({ uz: 'Yakunlandi!', en: 'Completed!', ru: 'Готово!' })}
             </h2>
             <p className="mb-6 text-amber-600 dark:text-[var(--learn-gold)]">
-              +{lastXp} XP
+              {lastXp > 0
+                ? `+${lastXp} XP`
+                : t({
+                    uz: 'Ball faqat kunlik majburiyat uchun beriladi',
+                    en: 'Points are only awarded for the daily plan',
+                    ru: 'Баллы начисляются только за дневной план',
+                  })}
             </p>
             <CheerfulBackLink to={`/learn/level/${levelId}`} variant="cta">
               {t({ uz: 'Levelga qaytish', en: 'Back to level', ru: 'К уровню' })}
