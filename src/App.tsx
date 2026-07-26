@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AppProvider } from '@/providers/AppProvider';
 import { AudioPlayerProvider } from '@/providers/AudioPlayerProvider';
@@ -10,7 +10,6 @@ import WelcomeLanguage from '@/pages/WelcomeLanguage';
 import LoginPage from '@/pages/LoginPage';
 import OAuthCallbackPage from '@/pages/OAuthCallbackPage';
 import { OAuthDeepLinkHandler } from '@/components/OAuthDeepLinkHandler';
-import RegisterPage from '@/pages/RegisterPage';
 import OrganizationSelectPage from '@/pages/OrganizationSelectPage';
 import LearnLayout from '@/pages/learn/LearnLayout';
 import LearnHomePage from '@/pages/learn/LearnHomePage';
@@ -34,7 +33,7 @@ export default function App() {
               <Route path="/welcome" element={<WelcomeLanguage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/register" element={<Navigate to="/login" replace />} />
               <Route element={<RequireAuth />}>
                 <Route path="/organization" element={<OrganizationSelectPage />} />
                 <Route
