@@ -283,44 +283,6 @@ export type LeaderboardResponse = {
   top: LeaderboardRow[];
 };
 
-export type EmployeeCertificate = {
-  id: string;
-  userId: string;
-  organizationId: string;
-  positionTitle: string;
-  certificateNumber: string;
-  presentedByFullName: string;
-  createdByUserId: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type EmployeeCheckType =
-  | 'GENERAL_KNOWLEDGE'
-  | 'SAFETY_TECHNIQUE'
-  | 'SPECIAL_WORK_PERMIT'
-  | 'RESUSCITATION_TRAINING'
-  | 'MEDICAL_EXAM';
-
-export type EmployeeCheck = {
-  id: string;
-  userId: string;
-  type: EmployeeCheckType;
-  checkDate: string;
-  reason: string | null;
-  grade: string | null;
-  nextCheckDate: string | null;
-  commissionLeaderSignature: string | null;
-  qualificationGroup: string | null;
-  ruleName: string | null;
-  conclusion: string | null;
-  doctorConclusion: string | null;
-  responsibleSignature: string | null;
-  createdByUserId: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
 // ─── Audio Library (Mobile) ────────────────────────────────────────────────
 export type AudioBookSummary = {
   id: string;
@@ -688,22 +650,6 @@ class MobileApiService {
       xpMessage?: string | null;
       hearts?: HeartsState;
     }>('/progress/matching', { questionId, pairs, source });
-    return response.data;
-  }
-
-  async getMyEmployeeCertificate(): Promise<EmployeeCertificate | null> {
-    const response = await this.api.get<EmployeeCertificate | null>(
-      '/auth/me/employee-certificate'
-    );
-    return response.data;
-  }
-
-  async listMyChecks(params?: {
-    type?: EmployeeCheckType;
-  }): Promise<EmployeeCheck[]> {
-    const response = await this.api.get<EmployeeCheck[]>('/auth/me/checks', {
-      params
-    });
     return response.data;
   }
 
