@@ -639,9 +639,7 @@ class MobileApiService {
     const fileName =
       file instanceof File ? file.name : `avatar-${Date.now()}.jpg`;
     form.append('file', file, fileName);
-    if (options?.hasFace !== undefined) {
-      form.append('hasFace', String(options.hasFace));
-    }
+    form.append('hasFace', String(options?.hasFace ?? true));
     if (options?.faceConfidence !== undefined) {
       form.append('faceConfidence', String(options.faceConfidence));
     }
