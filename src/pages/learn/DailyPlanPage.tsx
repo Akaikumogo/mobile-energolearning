@@ -605,7 +605,7 @@ export default function DailyPlanPage() {
             <div className="flex flex-col gap-3">
               {[...question.options]
                 .sort((a, b) => a.orderIndex - b.orderIndex)
-                .map((opt, oi) => {
+                .map((opt) => {
                   const isPicked = pickedOptionId === opt.id;
                   const isRevealedCorrect = revealedCorrectOptionId === opt.id;
                   return (
@@ -632,9 +632,6 @@ export default function DailyPlanPage() {
                         !pickable && !feedback && 'opacity-70',
                       )}
                     >
-                      <span className="mr-2 font-bold">
-                        {String.fromCharCode(65 + oi)}.
-                      </span>
                       {opt.optionText}
                     </button>
                   );
@@ -762,7 +759,7 @@ function MatchingBlock({
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-2">
-          {left.map((opt, i) => {
+            {left.map((opt) => {
             const paired = byLeft.get(opt.id);
             const active = leftId === opt.id;
             return (
@@ -780,7 +777,7 @@ function MatchingBlock({
                 )}
               >
                 <span className="min-w-0 flex-1 text-sm font-bold text-slate-900 dark:text-white">
-                  {String.fromCharCode(65 + i)}. {opt.optionText}
+                  {opt.optionText}
                 </span>
                 {paired != null && (
                   <span className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
@@ -792,7 +789,7 @@ function MatchingBlock({
           })}
         </div>
         <div className="flex flex-col gap-2">
-          {right.map((opt, i) => {
+            {right.map((opt) => {
             const paired = byRight.get(opt.id);
             const dimmed = !pickable || (!leftId && paired == null);
             return (
@@ -809,7 +806,7 @@ function MatchingBlock({
                 )}
               >
                 <span className="min-w-0 flex-1 text-sm font-bold text-slate-900 dark:text-white">
-                  {String.fromCharCode(65 + i)}. {opt.matchText ?? ''}
+                  {opt.matchText ?? ''}
                 </span>
                 {paired != null && (
                   <span className="text-xs font-extrabold text-slate-600 dark:text-slate-300">

@@ -711,7 +711,7 @@ export default function TheoryLessonPage() {
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-2">
-                      {left.map((opt, i) => {
+                      {left.map((opt) => {
                         const paired = byLeft.get(opt.id);
                         const active = matchLeftId === opt.id;
                         const pairCls =
@@ -734,7 +734,7 @@ export default function TheoryLessonPage() {
                             )}
                           >
                             <span className="min-w-0 flex-1 font-bold text-slate-900 dark:text-white">
-                              {String.fromCharCode(65 + i)}. {opt.optionText}
+                              {opt.optionText}
                             </span>
                             {paired != null && (
                               <span className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
@@ -747,7 +747,7 @@ export default function TheoryLessonPage() {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      {right.map((opt, i) => {
+                      {right.map((opt) => {
                         const paired = byRight.get(opt.id);
                         const dimmed =
                           !pickable || (!matchLeftId && paired == null);
@@ -769,7 +769,7 @@ export default function TheoryLessonPage() {
                             )}
                           >
                             <span className="min-w-0 flex-1 font-bold text-slate-900 dark:text-white">
-                              {String.fromCharCode(65 + i)}. {opt.matchText ?? ''}
+                              {opt.matchText ?? ''}
                             </span>
                             {paired != null && (
                               <span className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
@@ -839,7 +839,6 @@ export default function TheoryLessonPage() {
                 {[...question.options]
                   .sort((a, b) => a.orderIndex - b.orderIndex)
                   .map((opt, oi) => {
-                    const letter = String.fromCharCode(65 + oi);
                     const pickable =
                       !feedback && !answerMut.isPending && canDoQuiz && !blocked;
                     const showResult = Boolean(feedback);
@@ -886,23 +885,7 @@ export default function TheoryLessonPage() {
                       >
                         <span
                           className={clsx(
-                            'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 text-sm font-black text-white shadow-md',
-                            isWrongPick &&
-                              'border-rose-600 bg-rose-600 ring-2 ring-rose-300/40 dark:border-[var(--learn-red)] dark:bg-[var(--learn-red)] dark:ring-rose-400/25',
-                            isCorrectReveal &&
-                              'border-emerald-600 bg-emerald-600 ring-2 ring-emerald-300/40 dark:border-[var(--learn-green)] dark:bg-[var(--learn-green)] dark:ring-emerald-400/25',
-                            !isWrongPick &&
-                              !isCorrectReveal &&
-                              'border-blue-500/50 bg-blue-600 ring-2 ring-blue-400/25 dark:border-[var(--learn-blue)] dark:bg-[var(--learn-blue)] dark:ring-blue-400/20',
-                            isOtherAfterResult &&
-                              'border-slate-300 bg-slate-400 text-white ring-0 dark:border-slate-600 dark:bg-slate-600',
-                          )}
-                        >
-                          {letter}
-                        </span>
-                        <span
-                          className={clsx(
-                            'min-w-0 flex-1 pt-0.5 text-base font-bold',
+                            'min-w-0 flex-1 text-base font-bold',
                             isWrongPick &&
                               'text-rose-900 dark:text-rose-100',
                             isCorrectReveal &&
