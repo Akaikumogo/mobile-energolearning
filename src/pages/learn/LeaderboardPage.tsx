@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Crown, Trophy, Users } from 'lucide-react';
 import clsx from 'clsx';
 import { useTranslation } from '@/hooks/useTranslation';
-import mobileApi, { BACKEND_ORIGIN, type LeaderboardRow } from '@/services/api';
+import mobileApi, { resolveMediaUrl, type LeaderboardRow } from '@/services/api';
 
 type Scope = 'global' | 'organization';
 
@@ -16,7 +16,7 @@ function getInitials(row: Pick<LeaderboardRow, 'firstName' | 'lastName'>) {
 
 function RowAvatar({ row }: { row: LeaderboardRow }) {
   const initials = useMemo(() => getInitials(row), [row.firstName, row.lastName]);
-  const src = row.avatarUrl ? `${BACKEND_ORIGIN}${row.avatarUrl}` : null;
+  const src = row.avatarUrl ? resolveMediaUrl(row.avatarUrl) : null;
   return (
     <div className="h-10 w-10 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]">
       {src ? (

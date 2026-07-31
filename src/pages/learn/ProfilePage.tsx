@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
-import mobileApi, { BACKEND_ORIGIN } from '@/services/api';
+import mobileApi, { resolveMediaUrl } from '@/services/api';
 import { queryClient } from '@/queryClient';
 import { useApp } from '@/hooks/useApp';
 import clsx from 'clsx';
@@ -58,7 +58,7 @@ export default function ProfilePage() {
     return `${a ? a[0] : ''}${b ? b[0] : ''}`.toUpperCase() || 'U';
   }, [me?.firstName, me?.lastName]);
 
-  const avatarSrc = me?.avatarUrl ? `${BACKEND_ORIGIN}${me.avatarUrl}` : null;
+  const avatarSrc = me?.avatarUrl ? resolveMediaUrl(me.avatarUrl) : null;
 
   const onPickAvatar = async (file: File) => {
     if (!file.type.startsWith('image/')) return;
