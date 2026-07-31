@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import clsx from 'clsx';
+import { resolveMediaUrl } from '@/services/api';
 import { CertificateQr } from './CertificateQr';
 import { CertificateRibbons } from './CertificateRibbons';
 import { tierFaceStyle } from './certificate-theme';
@@ -300,12 +301,21 @@ function CardPhoto({
   const frame =
     'w-[23cqw] shrink-0 self-start aspect-[4/5] rounded-[1cqw] overflow-hidden border-[0.5cqw] border-white/85 shadow-[0_3px_10px_rgba(0,0,0,0.4)]';
 
-  if (avatarUrl) {
+  const src = avatarUrl ? resolveMediaUrl(avatarUrl) : '';
+  // `cors` — rasmga eksport uchun kerak; server CORS bermasa `plain` ga
+  // tushamiz, shunda hech bo'lmasa rasm ekranda ko'rinadi.
+  const [mode, setMode] = useState<'cors' | 'plain' | 'failed'>('cors');
+
+  useEffect(() => setMode('cors'), [src]);
+
+  if (src && mode !== 'failed') {
     return (
       <img
-        src={avatarUrl}
+        key={mode}
+        src={src}
         alt=""
-        crossOrigin="anonymous"
+        {...(mode === 'cors' ? { crossOrigin: 'anonymous' as const } : {})}
+        onError={() => setMode((prev) => (prev === 'cors' ? 'plain' : 'failed'))}
         className={clsx(frame, 'object-cover object-[center_top]')}
       />
     );
