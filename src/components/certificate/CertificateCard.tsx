@@ -4,6 +4,7 @@ import { resolveMediaUrl } from '@/services/api';
 import { CertificateQr } from './CertificateQr';
 import { CertificateRibbons } from './CertificateRibbons';
 import { tierFaceStyle } from './certificate-theme';
+import { formatCardOrgTitle } from './org-title';
 import {
   isGoldTier,
   resolvePositionTier,
@@ -12,18 +13,10 @@ import {
 import type { EmployeeCertificate } from './types';
 import { UmetSeal } from './UmetSeal';
 
-/**
- * NES dan keladigan nomlarda tashkiliy-huquqiy shakl "AO"/"АО" ko'rinishida keladi.
- * Guvohnomada u doim "AJ" bo'lishi kerak.
- */
-function normalizeOrgForm(name: string) {
-  return name.replace(/(^|[\s(«"'])(AO|АО)(?=[\s.,)»"']|$)/gu, (_m, lead: string) => `${lead}AJ`);
-}
-
 /** Guvohnoma sarlavhasi — filialning to'liq nomi (bo'lmasa tashkilot nomi). */
 function cardTitle(certificate: EmployeeCertificate) {
-  return normalizeOrgForm(
-    certificate.branchName?.trim() || certificate.organizationTitle?.trim() || '',
+  return formatCardOrgTitle(
+    certificate.branchName?.trim() || certificate.organizationTitle?.trim(),
   );
 }
 
@@ -147,10 +140,10 @@ export function CertificateCardFront({
 
       <div className={FACE_INNER}>
         {/* Sarlavha — filialning to'liq nomi */}
-        <header className="relative z-[2] shrink-0 pt-[3.4cqw] pr-[13cqw] text-left">
+        <header className="relative z-[2] shrink-0 pt-[3cqw] pr-[13cqw] text-left">
           <p
             className={clsx(
-              'm-0 text-[3.1cqw] font-extrabold uppercase leading-snug tracking-tight line-clamp-2',
+              'm-0 text-[2.95cqw] font-extrabold uppercase leading-snug tracking-tight line-clamp-2',
               gold && 'text-[var(--card-accent-2)]',
             )}
           >
@@ -163,11 +156,11 @@ export function CertificateCardFront({
           aria-hidden
         />
 
-        {/* Asosiy qism: rasm | maydonlar | QR */}
-        <div className="relative z-[2] flex flex-1 min-h-0 gap-[3.6cqw] pt-[2.4cqw]">
+        {/* Asosiy qism: rasm | maydonlar | QR — uchtasi bir chiziqdan boshlanadi */}
+        <div className="relative z-[2] flex min-h-0 items-start gap-[3.2cqw] pt-[5.5cqw]">
           <CardPhoto avatarUrl={avatarUrl} tier={tier} />
 
-          <dl className="m-0 flex flex-1 min-w-0 flex-col justify-center gap-[3cqw] py-[0.3cqw] text-left">
+          <dl className="m-0 flex flex-1 min-w-0 flex-col gap-[2.8cqw] text-left">
             <CardField
               labelUz="Familiyasi"
               labelEn="Surname"
@@ -183,10 +176,17 @@ export function CertificateCardFront({
               labelEn="Patronymic"
               value={certificate.middleName || '—'}
             />
+            <CardField
+              labelUz="Lavozimi"
+              labelEn="Position"
+              value={certificate.positionTitle || '—'}
+              compact
+            />
           </dl>
 
-          <div className="flex w-[21cqw] shrink-0 items-center justify-center">
-            <div className="h-[20cqw] w-[20cqw] rounded-[1cqw] bg-white p-[0.9cqw] shadow-[0_2px_8px_rgba(0,0,0,0.35)]">
+          {/* Kvadrat QR — eni rasm balandligiga teng, balandlik bo'yicha markazda */}
+          <div className="w-[30cqw] shrink-0 self-center">
+            <div className="aspect-square w-full rounded-[1cqw] bg-white p-[0.9cqw] shadow-[0_2px_8px_rgba(0,0,0,0.35)]">
               <CertificateQr value={certificate.verifyUrl} />
             </div>
           </div>
@@ -267,20 +267,24 @@ function CardField({
   labelEn,
   value,
   accent = false,
+  compact = false,
 }: {
   labelUz: string;
   labelEn: string;
   value: string;
   accent?: boolean;
+  /** Lavozim kabi uzun qiymatlar uchun kichikroq shrift. */
+  compact?: boolean;
 }) {
   return (
     <div className="min-w-0">
-      <dt className="m-0 text-[1.85cqw] font-medium leading-tight text-[var(--card-muted)]">
+      <dt className="m-0 text-[1.75cqw] font-medium leading-tight text-[var(--card-muted)]">
         {labelUz} <span className="italic opacity-80">/ {labelEn}</span>
       </dt>
       <dd
         className={clsx(
-          'm-0 mt-[0.35cqw] text-[3.3cqw] font-bold leading-tight text-[var(--card-text)] line-clamp-1 break-words',
+          'm-0 mt-[0.3cqw] font-bold leading-tight text-[var(--card-text)] break-words',
+          compact ? 'text-[2.5cqw] line-clamp-2' : 'text-[3.1cqw] line-clamp-1',
           accent && 'text-[var(--card-role)]',
         )}
       >
@@ -299,7 +303,7 @@ function CardPhoto({
   tier: PositionTier;
 }) {
   const frame =
-    'w-[23cqw] shrink-0 self-start aspect-[4/5] rounded-[1cqw] overflow-hidden border-[0.5cqw] border-white/85 shadow-[0_3px_10px_rgba(0,0,0,0.4)]';
+    'w-[24cqw] shrink-0 self-start aspect-[4/5] rounded-[1cqw] overflow-hidden border-[0.5cqw] border-white/85 shadow-[0_3px_10px_rgba(0,0,0,0.4)]';
 
   const src = avatarUrl ? resolveMediaUrl(avatarUrl) : '';
   // `cors` — rasmga eksport uchun kerak; server CORS bermasa `plain` ga
