@@ -1,4 +1,7 @@
 import axios, { type AxiosError } from 'axios';
+import type { EmployeeCertificate } from '@/components/certificate/types';
+
+export type { EmployeeCertificate };
 
 const API_BASE_STORAGE_KEY = 'elektrolearn_api_base_v2';
 
@@ -680,6 +683,13 @@ class MobileApiService {
 
   async getMyProgress(): Promise<MyProgressResponse> {
     const response = await this.api.get<MyProgressResponse>('/progress/me');
+    return response.data;
+  }
+
+  /** Xodimning o'z bilim sinovi guvohnomalari (eng yangisi birinchi). */
+  async getMyCertificates(): Promise<EmployeeCertificate[]> {
+    const response =
+      await this.api.get<EmployeeCertificate[]>('/certificates/me');
     return response.data;
   }
 

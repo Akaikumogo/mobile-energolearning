@@ -15,6 +15,7 @@ import LearnLayout from '@/pages/learn/LearnLayout';
 import LearnHomePage from '@/pages/learn/LearnHomePage';
 import DailyPlanPage from '@/pages/learn/DailyPlanPage';
 import ProfilePage from '@/pages/learn/ProfilePage';
+import CertificatePage from '@/pages/learn/CertificatePage';
 import LeaderboardPage from '@/pages/learn/LeaderboardPage';
 import LevelPage from '@/pages/learn/LevelPage';
 import TheoryLessonPage from '@/pages/learn/TheoryLessonPage';
@@ -49,6 +50,7 @@ export default function App() {
                   <Route path="rating" element={<LeaderboardPage />} />
                   <Route path="assistant" element={<AiAssistantPage />} />
                   <Route path="profile" element={<ProfilePage />} />
+                  <Route path="certificate" element={<CertificatePage />} />
                   <Route path="library" element={<AudioLibraryPage />} />
                   <Route path="library/:bookId" element={<AudioBookDetailPage />} />
                   <Route path="level/:levelId" element={<LevelPage />} />

@@ -2,7 +2,9 @@ import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
+  Award,
   Camera,
+  ChevronRight,
   Crown,
   Languages,
   LogOut,
@@ -137,6 +139,27 @@ export default function ProfilePage() {
           </p>
         ) : null}
       </motion.div>
+
+      <button
+        type="button"
+        onClick={() => navigate('/learn/certificate')}
+        className="mb-6 flex w-full items-center gap-3 rounded-3xl border border-slate-200 bg-white p-5 text-left dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]"
+      >
+        <Award className="h-5 w-5 shrink-0 text-amber-500 dark:text-[var(--learn-gold)]" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">
+            {t({ uz: 'Mening guvohnomam', en: 'My certificate', ru: 'Моё удостоверение' })}
+          </p>
+          <p className="text-xs text-slate-500 dark:text-[var(--learn-muted)]">
+            {t({
+              uz: 'Ko‘rish, saqlash va ulashish',
+              en: 'View, save and share',
+              ru: 'Просмотр, сохранение и отправка',
+            })}
+          </p>
+        </div>
+        <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
+      </button>
 
       <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]">
         <div className="flex items-center justify-between gap-3">
