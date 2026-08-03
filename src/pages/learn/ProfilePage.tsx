@@ -1,9 +1,8 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Award,
-  Camera,
   ChevronRight,
   Crown,
   Languages,
@@ -24,8 +23,6 @@ import clsx from 'clsx';
 export default function ProfilePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
   const { theme, setTheme, lang, setLang } = useApp();
   const isDark = theme === 'dark';
 
@@ -62,29 +59,6 @@ export default function ProfilePage() {
 
   const avatarSrc = me?.avatarUrl ? resolveMediaUrl(me.avatarUrl) : null;
 
-  const onPickAvatar = async (file: File) => {
-    if (!file.type.startsWith('image/')) return;
-    if (file.size > 5 * 1024 * 1024) return;
-    setUploading(true);
-    try {
-      const res = await mobileApi.uploadMyAvatar(file);
-      // keep localStorage cached user in sync
-      try {
-        const raw = localStorage.getItem('user');
-        if (raw) {
-          const u = JSON.parse(raw) as Record<string, unknown>;
-          u.avatarUrl = res.avatarUrl;
-          localStorage.setItem('user', JSON.stringify(u));
-        }
-      } catch {
-        /* ignore */
-      }
-      await queryClient.invalidateQueries({ queryKey: ['me'] });
-    } finally {
-      setUploading(false);
-    }
-  };
-
   return (
     <div className="px-4 py-6">
       <motion.div
@@ -96,12 +70,9 @@ export default function ProfilePage() {
           {t({ uz: 'Foydalanuvchi', en: 'User', ru: 'Пользователь' })}
         </p>
         <div className="mt-4 flex items-center gap-4">
-          <button
-            type="button"
-            disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
-            className="group relative h-16 w-16 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]"
-            title={t({ uz: 'Avatarni o‘zgartirish', en: 'Change avatar', ru: 'Сменить аватар' })}
+          <div
+            className="relative h-16 w-16 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]"
+            aria-hidden={!avatarSrc}
           >
             {avatarSrc ? (
               <img src={avatarSrc} alt="avatar" className="h-full w-full object-cover" />
@@ -110,22 +81,8 @@ export default function ProfilePage() {
                 <UserCircle className="h-9 w-9" />
               </div>
             )}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/40">
-              <Camera className="h-5 w-5 text-white opacity-0 transition group-hover:opacity-100" />
-            </div>
             <span className="sr-only">{initials}</span>
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void onPickAvatar(f);
-              e.currentTarget.value = '';
-            }}
-          />
+          </div>
           <div className="min-w-0">
             <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
               {me ? `${me.firstName} ${me.lastName}` : '—'}
