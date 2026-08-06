@@ -842,14 +842,15 @@ export default function TheoryLessonPage() {
                     const pickable =
                       !feedback && !answerMut.isPending && canDoQuiz && !blocked;
                     const showResult = Boolean(feedback);
-                    const isWrongPick =
-                      showResult &&
-                      feedback === 'wrong' &&
-                      pickedOptionId === opt.id;
                     const isCorrectReveal =
                       showResult &&
                       revealedCorrectOptionId != null &&
                       revealedCorrectOptionId === opt.id;
+                    const isWrongPick =
+                      showResult &&
+                      feedback === 'wrong' &&
+                      pickedOptionId === opt.id &&
+                      !isCorrectReveal;
                     const isOtherAfterResult =
                       showResult && !isWrongPick && !isCorrectReveal;
 
