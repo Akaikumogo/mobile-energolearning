@@ -235,6 +235,17 @@ export type MobileQuestion = {
   options: MobileQuestionOption[];
 };
 
+export type MobileTheoryQuizMode = 'continue' | 'retry';
+
+export type MobileTheoryQuestionsResponse = {
+  mode: MobileTheoryQuizMode;
+  totalQuestions: number;
+  answeredCount: number;
+  remainingCount: number;
+  isModuleComplete: boolean;
+  questions: MobileQuestion[];
+};
+
 export type DailyPlanQuestion = MobileQuestion & {
   answered: boolean;
   isCorrect: boolean | null;
@@ -414,6 +425,21 @@ export type AudioBookSummary = {
   coverUrl?: string | null;
   description?: string | null;
   chaptersCount: number;
+};
+
+export type LibraryDocumentKind = 'PDF' | 'DOCX' | 'DOC';
+
+export type LibraryDocument = {
+  id: string;
+  title: string;
+  description: string | null;
+  fileKind: LibraryDocumentKind;
+  fileUrl: string;
+  originalName: string | null;
+  mimeType: string | null;
+  fileSize: string | null;
+  orderIndex: number;
+  createdAt: string;
 };
 
 export type AudioParagraph = {
@@ -750,15 +776,25 @@ class MobileApiService {
     return response.data;
   }
 
-  async getQuestionsByTheory(theoryId: string): Promise<MobileQuestion[]> {
-    const response = await this.api.get<MobileQuestion[]>(
-      `/theories/${theoryId}/questions`
+  async getQuestionsByTheory(
+    theoryId: string,
+    opts?: { mode?: MobileTheoryQuizMode },
+  ): Promise<MobileTheoryQuestionsResponse> {
+    const mode = opts?.mode === 'retry' ? 'retry' : 'continue';
+    const response = await this.api.get<MobileTheoryQuestionsResponse>(
+      `/theories/${theoryId}/questions`,
+      { params: { mode } },
     );
     return response.data;
   }
 
   async listAudioBooks(): Promise<AudioBookSummary[]> {
     const response = await this.api.get<AudioBookSummary[]>('/audio-books');
+    return response.data;
+  }
+
+  async listLibraryDocuments(): Promise<LibraryDocument[]> {
+    const response = await this.api.get<LibraryDocument[]>('/library-documents');
     return response.data;
   }
 

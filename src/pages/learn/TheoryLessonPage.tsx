@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import {
@@ -18,6 +18,7 @@ import mobileApi from '@/services/api';
 import type {
   MobileNazariyaSection,
   MobileQuestion,
+  MobileTheoryQuizMode,
   MatchingPair,
   HeartsState,
   MyProgressResponse,
@@ -37,6 +38,9 @@ export default function TheoryLessonPage() {
     levelId: string;
     theoryId: string;
   }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const quizMode: MobileTheoryQuizMode =
+    searchParams.get('mode') === 'retry' ? 'retry' : 'continue';
   const { t } = useTranslation();
   const devMode = useDevMode();
   const navigate = useNavigate();
@@ -57,6 +61,7 @@ export default function TheoryLessonPage() {
     Array<{ leftOptionId: string; rightOptionId: string; pairIndex: number }>
   >([]);
   const submitLockRef = useRef(false);
+  const sessionBootstrappedRef = useRef(false);
   const progressQuery = useQuery({
     queryKey: ['progress-me'],
     queryFn: () => mobileApi.getMyProgress(),
@@ -121,6 +126,7 @@ export default function TheoryLessonPage() {
   });
 
   useEffect(() => {
+    sessionBootstrappedRef.current = false;
     setReadStep(0);
     setPhase('read');
     setQIndex(0);
@@ -130,7 +136,7 @@ export default function TheoryLessonPage() {
     setOutOfLives(false);
     setSubmitError(null);
     setLastXp(0);
-  }, [theoryId]);
+  }, [theoryId, quizMode]);
 
   useEffect(() => {
     setMatchLeftId(null);
@@ -143,10 +149,36 @@ export default function TheoryLessonPage() {
       : '';
 
   const questionsQuery = useQuery({
-    queryKey: ['theory-questions', quizTheoryId],
-    queryFn: () => mobileApi.getQuestionsByTheory(quizTheoryId),
+    queryKey: ['theory-questions', quizTheoryId, quizMode],
+    queryFn: () =>
+      mobileApi.getQuestionsByTheory(quizTheoryId, { mode: quizMode }),
     enabled: !!quizTheoryId && theoryQuery.isSuccess,
+    refetchOnWindowFocus: false,
   });
+
+  // Resume: qisman yechilgan modul → to'g'ridan-to'g'ri quiz.
+  // Tugatilgan + continue → done (retry CTA). Retry → quiz.
+  useEffect(() => {
+    if (!questionsQuery.isSuccess || !questionsQuery.data) return;
+    if (sessionBootstrappedRef.current) return;
+    sessionBootstrappedRef.current = true;
+
+    const meta = questionsQuery.data;
+    if (quizMode === 'retry') {
+      setPhase(meta.questions.length > 0 ? 'quiz' : 'done');
+      setQIndex(0);
+      return;
+    }
+    if (meta.isModuleComplete || meta.questions.length === 0) {
+      setPhase('done');
+      setQIndex(0);
+      return;
+    }
+    if (meta.answeredCount > 0) {
+      setPhase('quiz');
+      setQIndex(0);
+    }
+  }, [questionsQuery.isSuccess, questionsQuery.data, quizMode]);
 
   const sections: MobileNazariyaSection[] = useMemo(() => {
     const theory = theoryQuery.data;
@@ -183,10 +215,21 @@ export default function TheoryLessonPage() {
     return flat;
   }, [sections, theoryQuery.data]);
 
-  const questions = (questionsQuery.data ?? []).sort(
-    (a, b) => a.orderIndex - b.orderIndex,
-  );
+  // Backend tartibini saqlaymiz (RANDOM) — orderIndex bo'yicha qayta tartiblamaymiz.
+  const quizMeta = questionsQuery.data;
+  const questions: MobileQuestion[] = quizMeta?.questions ?? [];
   const question: MobileQuestion | undefined = questions[qIndex];
+  const totalModuleQuestions = quizMeta?.totalQuestions ?? 0;
+  const answeredBeforeSession = quizMeta?.answeredCount ?? 0;
+  const remainingBeforeSession = quizMeta?.remainingCount ?? questions.length;
+  const moreAfterSession =
+    quizMode === 'continue' &&
+    remainingBeforeSession > questions.length &&
+    questions.length > 0;
+  const finishingModule =
+    quizMode === 'continue' &&
+    totalModuleQuestions > 0 &&
+    answeredBeforeSession + questions.length >= totalModuleQuestions;
 
   const totalReadingSteps = flatReadSteps.length;
   const qLen =
@@ -281,18 +324,84 @@ export default function TheoryLessonPage() {
     answerMut.mutate({ questionId: question.id, selectedOptionId: optionId });
   };
 
-  const nextQuestion = () => {
+  const resetQuizUi = () => {
     setFeedback(null);
     setPickedOptionId(null);
     setRevealedCorrectOptionId(null);
     setOutOfLives(false);
     setSubmitError(null);
     setLastXpMessage(null);
+    setMatchLeftId(null);
+    setMatchPairs([]);
+  };
+
+  const nextQuestion = () => {
+    resetQuizUi();
     if (qIndex + 1 >= questions.length) {
       setPhase('done');
       return;
     }
     setQIndex((i) => i + 1);
+  };
+
+  const startRetry = async () => {
+    resetQuizUi();
+    setQIndex(0);
+    setLastXp(0);
+    sessionBootstrappedRef.current = false;
+    if (quizMode !== 'retry') {
+      setSearchParams({ mode: 'retry' }, { replace: true });
+      return;
+    }
+    try {
+      const fresh = await mobileApi.getQuestionsByTheory(quizTheoryId, {
+        mode: 'retry',
+      });
+      queryClient.setQueryData(
+        ['theory-questions', quizTheoryId, 'retry'],
+        fresh,
+      );
+      sessionBootstrappedRef.current = true;
+      setPhase(fresh.questions.length > 0 ? 'quiz' : 'done');
+    } catch {
+      setSubmitError(
+        t({
+          uz: 'Qayta mashq yuklanmadi. Qayta urinib ko‘ring.',
+          en: 'Could not start retry. Try again.',
+          ru: 'Не удалось начать повтор. Попробуйте ещё раз.',
+        }),
+      );
+    }
+  };
+
+  const loadNextRemainingBatch = async () => {
+    resetQuizUi();
+    setQIndex(0);
+    setLastXp(0);
+    setPhase('quiz');
+    try {
+      const fresh = await mobileApi.getQuestionsByTheory(quizTheoryId, {
+        mode: 'continue',
+      });
+      queryClient.setQueryData(
+        ['theory-questions', quizTheoryId, 'continue'],
+        fresh,
+      );
+      sessionBootstrappedRef.current = true;
+      if (fresh.questions.length === 0) {
+        setPhase('done');
+      } else {
+        setPhase('quiz');
+      }
+    } catch {
+      setSubmitError(
+        t({
+          uz: 'Keyingi savollar yuklanmadi. Qayta urinib ko‘ring.',
+          en: 'Could not load next questions. Try again.',
+          ru: 'Не удалось загрузить следующие вопросы.',
+        }),
+      );
+    }
   };
 
   if (!levelId || !theoryId) return null;
@@ -587,7 +696,9 @@ export default function TheoryLessonPage() {
             <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-slate-50 p-3 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-extrabold tabular-nums text-blue-700 shadow-sm dark:bg-[var(--learn-card)] dark:text-[var(--learn-gold)] dark:shadow-none">
                 <Sparkles className="h-3.5 w-3.5 text-amber-500 dark:text-[var(--learn-gold)]" />
-                {qIndex + 1} / {questions.length}
+                {quizMode === 'continue' && totalModuleQuestions > 0
+                  ? `${answeredBeforeSession + qIndex + 1} / ${totalModuleQuestions}`
+                  : `${qIndex + 1} / ${questions.length}`}
               </span>
               <span
                 className="inline-flex items-center gap-1 rounded-full border-2 border-amber-200/80 bg-amber-50 px-2.5 py-1.5 shadow-sm dark:border-[var(--learn-gold)]/45 dark:bg-[#2d2410]/70 dark:shadow-[0_0_16px_rgba(255,196,0,0.12)]"
@@ -1028,8 +1139,33 @@ export default function TheoryLessonPage() {
               <PartyPopper className="mx-auto h-10 w-10" />
             </div>
             <h2 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">
-              {t({ uz: 'Yakunlandi!', en: 'Completed!', ru: 'Готово!' })}
+              {quizMode === 'retry'
+                ? t({
+                    uz: 'Qayta mashq tugadi!',
+                    en: 'Practice finished!',
+                    ru: 'Повтор завершён!',
+                  })
+                : finishingModule || quizMeta?.isModuleComplete
+                  ? t({
+                      uz: 'Modul tugadi!',
+                      en: 'Module complete!',
+                      ru: 'Модуль завершён!',
+                    })
+                  : t({
+                      uz: 'Sessiya tugadi!',
+                      en: 'Session done!',
+                      ru: 'Сессия завершена!',
+                    })}
             </h2>
+            {totalModuleQuestions > 0 ? (
+              <p className="mb-2 text-sm text-slate-600 dark:text-slate-400">
+                {t({
+                  uz: `Progress: ${Math.min(totalModuleQuestions, answeredBeforeSession + (questions.length || 0))}/${totalModuleQuestions} savol`,
+                  en: `Progress: ${Math.min(totalModuleQuestions, answeredBeforeSession + (questions.length || 0))}/${totalModuleQuestions} questions`,
+                  ru: `Прогресс: ${Math.min(totalModuleQuestions, answeredBeforeSession + (questions.length || 0))}/${totalModuleQuestions} вопросов`,
+                })}
+              </p>
+            ) : null}
             <p className="mb-6 text-amber-600 dark:text-[var(--learn-gold)]">
               {lastXp > 0
                 ? `+${lastXp} XP`
@@ -1039,6 +1175,43 @@ export default function TheoryLessonPage() {
                     ru: 'Баллы начисляются только за дневной план',
                   })}
             </p>
+
+            {moreAfterSession ? (
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  void loadNextRemainingBatch();
+                }}
+                className="mb-3 w-full max-w-sm rounded-2xl bg-blue-600 py-3.5 text-base font-bold text-white shadow-lg dark:bg-[var(--learn-blue)]"
+              >
+                {t({
+                  uz: 'Qolgan savollarni davom ettirish',
+                  en: 'Continue remaining questions',
+                  ru: 'Продолжить оставшиеся вопросы',
+                })}
+              </motion.button>
+            ) : null}
+
+            {(finishingModule ||
+              quizMeta?.isModuleComplete ||
+              quizMode === 'retry') && (
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  void startRetry();
+                }}
+                className="mb-3 w-full max-w-sm rounded-2xl bg-slate-800 py-3.5 text-base font-bold text-white shadow-md dark:bg-[var(--learn-surface)] dark:ring-1 dark:ring-[var(--learn-border)]"
+              >
+                {t({
+                  uz: 'Modulni qayta ishlash (random)',
+                  en: 'Retry module (shuffled)',
+                  ru: 'Пройти модуль снова (random)',
+                })}
+              </motion.button>
+            )}
+
             <CheerfulBackLink to={`/learn/level/${levelId}`} variant="cta">
               {t({ uz: 'Levelga qaytish', en: 'Back to level', ru: 'К уровню' })}
             </CheerfulBackLink>

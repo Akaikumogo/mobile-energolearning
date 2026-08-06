@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
 import mobileApi from '@/services/api';
@@ -59,9 +59,9 @@ export default function LevelPage() {
       </h1>
       <p className="mb-6 text-sm text-slate-600 dark:text-slate-400">
         {t({
-          uz: 'Darslarni ketma-ket o‘qing',
-          en: 'Study lessons in order',
-          ru: 'Проходите уроки по порядку',
+          uz: 'Darslarni ketma-ket o‘qing. Yechilgan savollar qayta chiqmaydi.',
+          en: 'Study lessons in order. Answered questions will not repeat.',
+          ru: 'Проходите уроки по порядку. Решённые вопросы не повторяются.',
         })}
       </p>
 
@@ -70,10 +70,14 @@ export default function LevelPage() {
           const done =
             th.totalQuestions > 0 &&
             th.answeredQuestions >= th.totalQuestions;
+          const inProgress = !done && th.answeredQuestions > 0;
           const pct =
             th.totalQuestions > 0
               ? Math.round((th.answeredQuestions / th.totalQuestions) * 100)
               : 0;
+          const href = done
+            ? `/learn/level/${levelId}/theory/${th.id}?mode=retry`
+            : `/learn/level/${levelId}/theory/${th.id}`;
 
           return (
             <motion.div
@@ -83,7 +87,7 @@ export default function LevelPage() {
               transition={{ delay: idx * 0.03 }}
             >
               <Link
-                to={`/learn/level/${levelId}/theory/${th.id}`}
+                to={href}
                 className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-amber-400 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:hover:border-[var(--learn-gold)]/70"
               >
                 <div
@@ -91,10 +95,16 @@ export default function LevelPage() {
                     'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white',
                     done
                       ? 'bg-emerald-500 dark:bg-[var(--learn-green)]'
-                      : 'bg-slate-700 dark:bg-[var(--learn-border)]',
+                      : inProgress
+                        ? 'bg-blue-600 dark:bg-[var(--learn-blue)]'
+                        : 'bg-slate-700 dark:bg-[var(--learn-border)]',
                   )}
                 >
-                  <BookOpen className="h-5 w-5" />
+                  {done ? (
+                    <RotateCcw className="h-5 w-5" />
+                  ) : (
+                    <BookOpen className="h-5 w-5" />
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-slate-900 dark:text-white">
@@ -103,6 +113,24 @@ export default function LevelPage() {
                   <p className="text-xs text-slate-500">
                     {th.answeredQuestions}/{th.totalQuestions}{' '}
                     {t({ uz: 'savol', en: 'questions', ru: 'вопросов' })}
+                    {' · '}
+                    {done
+                      ? t({
+                          uz: 'Qayta ishlash',
+                          en: 'Practice again',
+                          ru: 'Пройти снова',
+                        })
+                      : inProgress
+                        ? t({
+                            uz: 'Davom etish',
+                            en: 'Continue',
+                            ru: 'Продолжить',
+                          })
+                        : t({
+                            uz: 'Boshlash',
+                            en: 'Start',
+                            ru: 'Начать',
+                          })}
                   </p>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-[var(--learn-border)]">
                     <div
