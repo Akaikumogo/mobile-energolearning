@@ -21,6 +21,7 @@ import { queryClient } from '@/queryClient';
 import { useApp } from '@/hooks/useApp';
 import { CertificateCard } from '@/components/certificate/CertificateCard';
 import { resolveMyCertificate } from '@/utils/resolveMyCertificate';
+import { formatPersonName } from '@/utils/personName';
 import clsx from 'clsx';
 
 export default function ProfilePage() {
@@ -93,7 +94,7 @@ export default function ProfilePage() {
           </div>
           <div className="min-w-0">
             <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
-              {me ? `${me.firstName} ${me.lastName}` : '—'}
+              {me ? formatPersonName(me) || `${me.firstName} ${me.lastName}` : '—'}
             </p>
             <p className="text-sm text-slate-600 dark:text-slate-400">{me?.email}</p>
           </div>

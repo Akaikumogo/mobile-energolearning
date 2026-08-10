@@ -5,6 +5,7 @@ import { Crown, Trophy, Users } from 'lucide-react';
 import clsx from 'clsx';
 import { useTranslation } from '@/hooks/useTranslation';
 import mobileApi, { resolveMediaUrl, type LeaderboardRow } from '@/services/api';
+import { formatPersonName } from '@/utils/personName';
 
 type Scope = 'global' | 'organization';
 
@@ -88,7 +89,7 @@ function LeaderboardList({
                 <RowAvatar row={row} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
-                    {row.firstName} {row.lastName}
+                    {formatPersonName(row)}
                   </p>
                   <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                     {row.email}

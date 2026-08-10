@@ -428,6 +428,7 @@ export type LeaderboardRow = {
   userId: string;
   firstName: string;
   lastName: string;
+  middleName?: string | null;
   email: string;
   avatarUrl: string | null;
   xp: number;
