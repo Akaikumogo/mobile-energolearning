@@ -95,9 +95,9 @@ export default function CertificatePage() {
           blob,
           fileName,
           t({
-            uz: 'Bilim sinovi guvohnomasi',
-            en: 'Knowledge assessment certificate',
-            ru: 'Удостоверение о проверке знаний',
+            uz: 'ENERGO ID guvohnomasi',
+            en: 'ENERGO ID certificate',
+            ru: 'Удостоверение ENERGO ID',
           }),
         );
       }
@@ -141,21 +141,28 @@ export default function CertificatePage() {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]">
           <p className="text-sm font-semibold text-slate-900 dark:text-white">
             {t({
-              uz: 'Sizda hali guvohnoma yo‘q',
-              en: 'You have no certificate yet',
-              ru: 'У вас пока нет удостоверения',
+              uz: 'Guvohnoma yuklanmadi',
+              en: 'Certificate could not be loaded',
+              ru: 'Не удалось загрузить удостоверение',
             })}
           </p>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             {t({
-              uz: 'Guvohnoma bilim sinovi imtihonini muvaffaqiyatli topshirgandan so‘ng beriladi.',
-              en: 'A certificate is issued after you successfully pass the knowledge assessment.',
-              ru: 'Удостоверение выдаётся после успешной сдачи проверки знаний.',
+              uz: 'ENERGO ID maʼlumotini tekshiring yoki qaytadan kiring.',
+              en: 'Check your ENERGO ID data or sign in again.',
+              ru: 'Проверьте данные ENERGO ID или войдите снова.',
             })}
           </p>
         </div>
       ) : (
         <>
+          <p className="mb-3 text-center text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500 dark:text-[var(--learn-muted)]">
+            {t({
+              uz: 'Manba: ENERGO ID',
+              en: 'Source: ENERGO ID',
+              ru: 'Источник: ENERGO ID',
+            })}
+          </p>
           <CertificateCard
             certificate={certificate}
             avatarUrl={photoDataUrl ?? photoUrl}
@@ -163,9 +170,9 @@ export default function CertificatePage() {
 
           <p className="mt-3 text-center text-xs text-slate-500 dark:text-[var(--learn-muted)]">
             {t({
-              uz: 'Kartani bosib orqa tomonini ko‘ring',
-              en: 'Tap the card to flip it',
-              ru: 'Нажмите на карточку, чтобы перевернуть',
+              uz: 'ENERGO ID kartasi — avtomatik. Kartani bosib orqa tomonini koʻring',
+              en: 'ENERGO ID card — automatic. Tap to flip',
+              ru: 'Карта ENERGO ID — автоматически. Нажмите, чтобы перевернуть',
             })}
           </p>
 

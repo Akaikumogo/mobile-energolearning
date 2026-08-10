@@ -109,9 +109,9 @@ export default function ProfilePage() {
           </p>
           <p className="text-xs text-slate-500 dark:text-[var(--learn-muted)]">
             {t({
-              uz: 'Ko‘rish, saqlash va ulashish',
-              en: 'View, save and share',
-              ru: 'Просмотр, сохранение и отправка',
+              uz: 'ENERGO ID kartasi — ko‘rish va ulashish',
+              en: 'ENERGO ID card — view and share',
+              ru: 'Карта ENERGO ID — просмотр и отправка',
             })}
           </p>
         </div>
