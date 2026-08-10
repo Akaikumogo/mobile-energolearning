@@ -164,6 +164,24 @@ export type UserProfile = {
   mustChangePassword?: boolean;
 };
 
+export type PublicIdCard = {
+  found: true;
+  certificateNumber: string;
+  fullName: string;
+  lastName?: string;
+  firstName?: string;
+  middleName?: string;
+  positionTitle: string;
+  branchName: string;
+  organizationTitle: string;
+  issuedAt: string | null;
+  validUntil: string | null;
+  status: 'VALID' | 'EXPIRED' | 'REVOKED';
+  avatarUrl: string | null;
+  personnelNumber: string | null;
+  verifyUrl?: string;
+};
+
 export type LoginResponse = {
   success: boolean;
   message: string;
@@ -712,10 +730,18 @@ class MobileApiService {
     return response.data;
   }
 
-  /** Xodimning o'z bilim sinovi guvohnomalari (eng yangisi birinchi). */
+  /** Xodimning o'z ENERGO ID guvohnomasi (avtomatik). */
   async getMyCertificates(): Promise<EmployeeCertificate[]> {
     const response =
       await this.api.get<EmployeeCertificate[]>('/certificates/me');
+    return response.data;
+  }
+
+  /** QR skanerdan — ochiq guvohnoma tekshiruvi. */
+  async getPublicIdCard(id: string): Promise<PublicIdCard> {
+    const response = await this.api.get<PublicIdCard>(
+      `/public/id-card/${encodeURIComponent(id)}`,
+    );
     return response.data;
   }
 

@@ -5,6 +5,7 @@ import {
   Crown,
   Home,
   LibraryBig,
+  QrCode,
   Trophy,
   User,
   Zap,
@@ -168,6 +169,20 @@ export default function LearnLayout() {
           >
             <Trophy className="h-5 w-5 shrink-0" />
             {t({ uz: 'Reyting', en: 'Rating', ru: 'Рейтинг' })}
+          </NavLink>
+          <NavLink
+            to="/learn/qr"
+            className={({ isActive }) =>
+              clsx(
+                'flex min-w-0 flex-1 flex-col items-center gap-1 py-3 text-[10px] font-medium sm:text-xs',
+                isActive
+                  ? 'text-amber-600 dark:text-[var(--learn-gold)]'
+                  : 'text-slate-500 dark:text-[var(--learn-muted)]',
+              )
+            }
+          >
+            <QrCode className="h-5 w-5 shrink-0" />
+            QR
           </NavLink>
           <NavLink
             to="/learn/assistant"

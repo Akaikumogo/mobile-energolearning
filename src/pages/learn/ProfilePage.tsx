@@ -8,6 +8,7 @@ import {
   Languages,
   LogOut,
   Moon,
+  QrCode,
   Sun,
   Trophy,
   Users,
@@ -18,6 +19,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import mobileApi, { resolveMediaUrl } from '@/services/api';
 import { queryClient } from '@/queryClient';
 import { useApp } from '@/hooks/useApp';
+import { CertificateCard } from '@/components/certificate/CertificateCard';
 import clsx from 'clsx';
 
 export default function ProfilePage() {
@@ -35,6 +37,12 @@ export default function ProfilePage() {
     queryKey: ['progress-me'],
     queryFn: () => mobileApi.getMyProgress(),
   });
+
+  const { data: certificates, isLoading: certLoading } = useQuery({
+    queryKey: ['my-certificates'],
+    queryFn: () => mobileApi.getMyCertificates(),
+  });
+  const certificate = certificates?.[0] ?? null;
 
   const globalRankQuery = useQuery({
     queryKey: ['leaderboard-global-me'],
@@ -97,26 +105,66 @@ export default function ProfilePage() {
         ) : null}
       </motion.div>
 
-      <button
-        type="button"
-        onClick={() => navigate('/learn/certificate')}
-        className="mb-6 flex w-full items-center gap-3 rounded-3xl border border-slate-200 bg-white p-5 text-left dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]"
-      >
-        <Award className="h-5 w-5 shrink-0 text-amber-500 dark:text-[var(--learn-gold)]" />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-900 dark:text-white">
-            {t({ uz: 'Mening guvohnomam', en: 'My certificate', ru: 'Моё удостоверение' })}
-          </p>
-          <p className="text-xs text-slate-500 dark:text-[var(--learn-muted)]">
+      <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]">
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+            <Award className="h-4 w-4 text-amber-500 dark:text-[var(--learn-gold)]" />
             {t({
-              uz: 'ENERGO ID kartasi — ko‘rish va ulashish',
-              en: 'ENERGO ID card — view and share',
-              ru: 'Карта ENERGO ID — просмотр и отправка',
+              uz: 'Mening guvohnomam',
+              en: 'My certificate',
+              ru: 'Моё удостоверение',
+            })}
+          </h2>
+          <button
+            type="button"
+            onClick={() => navigate('/learn/qr')}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 dark:border-[var(--learn-border)] dark:text-slate-200"
+          >
+            <QrCode className="h-3.5 w-3.5" />
+            QR
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <p className="mb-3 text-[11px] text-slate-500 dark:text-[var(--learn-muted)]">
+          {t({
+            uz: 'Manba: ENERGO ID — avtomatik',
+            en: 'Source: ENERGO ID — automatic',
+            ru: 'Источник: ENERGO ID — автоматически',
+          })}
+        </p>
+        {certLoading ? (
+          <div className="h-40 animate-pulse rounded-2xl bg-slate-100 dark:bg-[var(--learn-surface)]" />
+        ) : certificate ? (
+          <CertificateCard
+            certificate={certificate}
+            avatarUrl={
+              certificate.avatarUrl
+                ? resolveMediaUrl(certificate.avatarUrl)
+                : avatarSrc
+            }
+          />
+        ) : (
+          <p className="py-6 text-center text-sm text-slate-500">
+            {t({
+              uz: 'Guvohnoma yuklanmadi',
+              en: 'Certificate not loaded',
+              ru: 'Удостоверение не загружено',
             })}
           </p>
-        </div>
-        <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
-      </button>
+        )}
+        <button
+          type="button"
+          onClick={() => navigate('/learn/certificate')}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 py-3 text-xs font-semibold text-slate-700 dark:border-[var(--learn-border)] dark:text-slate-200"
+        >
+          {t({
+            uz: 'PNG saqlash / ulashish',
+            en: 'Save PNG / share',
+            ru: 'Сохранить PNG / поделиться',
+          })}
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
 
       <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]">
         <div className="flex items-center justify-between gap-3">
