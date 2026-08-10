@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Award, Download, Share2 } from 'lucide-react';
 import clsx from 'clsx';
 import { useTranslation } from '@/hooks/useTranslation';
-import mobileApi, { resolveMediaUrl } from '@/services/api';
+import { resolveMediaUrl } from '@/services/api';
 import {
   CertificateCard,
   CertificateCardBack,
