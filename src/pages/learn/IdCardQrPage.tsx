@@ -19,6 +19,7 @@ import {
   formatCertificateDate,
 } from '@/components/certificate/CertificateCard';
 import type { EmployeeCertificate } from '@/components/certificate/types';
+import { resolveMyCertificate } from '@/utils/resolveMyCertificate';
 
 type Tab = 'my-qr' | 'scan';
 
@@ -93,10 +94,10 @@ export default function IdCardQrPage() {
   const scannerControlsRef = useRef<{ stop: () => void } | null>(null);
 
   const myCertQuery = useQuery({
-    queryKey: ['my-certificates'],
-    queryFn: () => mobileApi.getMyCertificates(),
+    queryKey: ['my-certificate'],
+    queryFn: () => resolveMyCertificate(),
   });
-  const myCard = myCertQuery.data?.[0] ?? null;
+  const myCard = myCertQuery.data ?? null;
 
   const scannedQuery = useQuery({
     queryKey: ['public-id-card', lookupId],

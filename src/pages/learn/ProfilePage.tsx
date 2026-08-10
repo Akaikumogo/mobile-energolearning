@@ -20,6 +20,7 @@ import mobileApi, { resolveMediaUrl } from '@/services/api';
 import { queryClient } from '@/queryClient';
 import { useApp } from '@/hooks/useApp';
 import { CertificateCard } from '@/components/certificate/CertificateCard';
+import { resolveMyCertificate } from '@/utils/resolveMyCertificate';
 import clsx from 'clsx';
 
 export default function ProfilePage() {
@@ -38,11 +39,10 @@ export default function ProfilePage() {
     queryFn: () => mobileApi.getMyProgress(),
   });
 
-  const { data: certificates, isLoading: certLoading } = useQuery({
-    queryKey: ['my-certificates'],
-    queryFn: () => mobileApi.getMyCertificates(),
+  const { data: certificate, isLoading: certLoading } = useQuery({
+    queryKey: ['my-certificate'],
+    queryFn: () => resolveMyCertificate(),
   });
-  const certificate = certificates?.[0] ?? null;
 
   const globalRankQuery = useQuery({
     queryKey: ['leaderboard-global-me'],

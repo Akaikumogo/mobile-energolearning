@@ -17,6 +17,7 @@ import {
   shareCertificatePng,
   toDataUrl,
 } from '@/utils/certificate-image';
+import { resolveMyCertificate } from '@/utils/resolveMyCertificate';
 
 type Feedback = { tone: 'ok' | 'error'; text: string } | null;
 
@@ -43,12 +44,11 @@ export default function CertificatePage() {
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
 
-  const { data: certificates, isLoading } = useQuery({
-    queryKey: ['my-certificates'],
-    queryFn: () => mobileApi.getMyCertificates(),
+  const { data: certificate, isLoading } = useQuery({
+    queryKey: ['my-certificate'],
+    queryFn: () => resolveMyCertificate(),
   });
 
-  const certificate = certificates?.[0] ?? null;
   const photoUrl = certificate?.avatarUrl
     ? resolveMediaUrl(certificate.avatarUrl)
     : null;

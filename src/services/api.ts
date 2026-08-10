@@ -162,6 +162,11 @@ export type UserProfile = {
   organizationIds: string[];
   organizations: { id: string; name: string }[];
   mustChangePassword?: boolean;
+  energoId?: string | null;
+  middleName?: string | null;
+  personnelNumber?: string | null;
+  post?: string | null;
+  createdAt?: string | null;
 };
 
 export type PublicIdCard = {
