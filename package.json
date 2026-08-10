@@ -22,6 +22,7 @@
     "@capacitor/share": "^7.0.4",
     "@tanstack/react-query": "^5.95.2",
     "@zxing/browser": "^0.1.5",
+    "@zxing/library": "^0.21.3",
     "axios": "^1.10.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.20.1",
