@@ -12,6 +12,13 @@ import {
 } from './position-tier';
 import type { EmployeeCertificate } from './types';
 import { UmetSeal } from './UmetSeal';
+import {
+  ID_CARD_ASPECT_CLASS,
+  ID_CARD_EXPORT_STATIC_CLASS,
+  ID_CARD_MOBILE_SCENE_CLASS,
+  ID_CARD_SIZE_LABEL,
+} from './id-card-dimensions';
+import { useTranslation } from '@/hooks/useTranslation';
 
 /** Guvohnoma sarlavhasi — filialning to'liq nomi (bo'lmasa tashkilot nomi). */
 function cardTitle(certificate: EmployeeCertificate) {
@@ -48,41 +55,49 @@ export function CertificateCard({
   avatarUrl,
   className,
 }: CertificateCardProps) {
+  const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
   const photo = avatarUrl ?? certificate.avatarUrl;
 
   return (
-    <button
-      type="button"
-      onClick={() => setFlipped((v) => !v)}
-      aria-pressed={flipped}
-      aria-label={`${certificate.fullName} — guvohnoma`}
-      className={clsx(
-        'relative block w-full border-0 bg-transparent p-0 aspect-[8/5] [perspective:1400px]',
-        'drop-shadow-[0_12px_28px_rgba(0,0,0,0.4)]',
-        className,
-      )}
-    >
-      <div
+    <div className={clsx('flex flex-col items-center gap-1.5', className)}>
+      <button
+        type="button"
+        onClick={() => setFlipped((v) => !v)}
+        aria-pressed={flipped}
+        aria-label={`${certificate.fullName} — guvohnoma`}
         className={clsx(
-          'absolute inset-0 [transform-style:preserve-3d] transition-transform duration-700 ease-[cubic-bezier(0.4,0.15,0.2,1)] will-change-transform',
-          flipped && '[transform:rotateY(180deg)]',
+          'relative block border-0 bg-transparent p-0 [perspective:1400px]',
+          'drop-shadow-[0_12px_28px_rgba(0,0,0,0.4)]',
+          ID_CARD_MOBILE_SCENE_CLASS,
+          ID_CARD_ASPECT_CLASS,
         )}
       >
-        <CertificateCardFront certificate={certificate} avatarUrl={photo} />
-        <CertificateCardBack certificate={certificate} />
-      </div>
-    </button>
+        <div
+          className={clsx(
+            'absolute inset-0 [transform-style:preserve-3d] transition-transform duration-700 ease-[cubic-bezier(0.4,0.15,0.2,1)] will-change-transform',
+            flipped && '[transform:rotateY(180deg)]',
+          )}
+        >
+          <CertificateCardFront certificate={certificate} avatarUrl={photo} />
+          <CertificateCardBack certificate={certificate} />
+        </div>
+      </button>
+
+      <p className="m-0 text-center text-[10px] font-medium text-slate-500 dark:text-[var(--learn-muted)]">
+        {t(ID_CARD_SIZE_LABEL)}
+      </p>
+    </div>
   );
 }
 
 const FACE_BASE =
-  'overflow-hidden border border-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(0,0,0,0.2)]';
+  'overflow-hidden border border-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(0,0,0,0.2)] [container-type:inline-size]';
 
 const FLIP_FACE =
   'absolute inset-0 [backface-visibility:hidden] [transform-style:preserve-3d] rounded-2xl';
 
-const STATIC_FACE = 'relative w-full aspect-[8/5] rounded-2xl';
+const STATIC_FACE = ID_CARD_EXPORT_STATIC_CLASS;
 
 /**
  * Ichki qatlam. Padding aynan shu yerda bo'lishi shart:

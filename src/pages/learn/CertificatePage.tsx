@@ -18,6 +18,7 @@ import {
   toDataUrl,
 } from '@/utils/certificate-image';
 import { resolveMyCertificate } from '@/utils/resolveMyCertificate';
+import { ID_CARD_EXPORT_WIDTH_PX } from '@/components/certificate/id-card-dimensions';
 
 type Feedback = { tone: 'ok' | 'error'; text: string } | null;
 
@@ -248,12 +249,13 @@ export default function CertificatePage() {
 
           {/*
             PNG uchun ekrandan tashqaridagi qatlam: ikkala tomon ham
-            qat'iy 960px kenglikda chiziladi, shunda natija telefon
+            qat'iy 8,5 sm kenglikda chiziladi, shunda natija telefon
             ekrani o'lchamiga bog'liq bo'lmaydi.
           */}
           <div
             ref={exportRef}
-            className="pointer-events-none fixed left-[-10000px] top-0 flex w-[960px] flex-col gap-8 bg-[#050a14] p-8"
+            className={`pointer-events-none fixed left-[-10000px] top-0 flex flex-col gap-8 bg-[#050a14] p-8`}
+            style={{ width: ID_CARD_EXPORT_WIDTH_PX }}
             aria-hidden
           >
             <CertificateCardFront
