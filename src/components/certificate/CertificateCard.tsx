@@ -27,17 +27,11 @@ const ORG_LINE = `"O'zbekiston milliy elektr tarmoqlari" AJ`;
 const CERT_TITLE_V1 = 'Xodimning bilim sinovi guvohnomasi';
 
 function cardTitle(certificate: EmployeeCertificate) {
-  return (
-    formatV1BranchLabel(
-      certificate.branchName?.trim() || certificate.organizationTitle?.trim(),
-    ) || SHORT_ORG_TITLE
-  );
+  return formatV1BranchLabel(certificate.branchName) || SHORT_ORG_TITLE;
 }
 
 function branchLine(certificate: EmployeeCertificate) {
-  return formatV1BranchLabel(
-    certificate.branchName?.trim() || certificate.organizationTitle?.trim(),
-  );
+  return formatV1BranchLabel(certificate.branchName);
 }
 
 type FaceVariant = 'flip' | 'static';
@@ -207,11 +201,14 @@ function CertificateCardFrontV1({
           <p className="m-0 text-[2.55cqw] font-bold leading-tight tracking-tight text-white">
             {ORG_LINE}
           </p>
-          {branchLine(certificate) ? (
-            <p className="m-0 mt-[0.5cqw] text-[2.15cqw] font-medium leading-tight text-white/90">
-              {branchLine(certificate)}
-            </p>
-          ) : null}
+          {(() => {
+            const branch = branchLine(certificate);
+            return branch ? (
+              <p className="m-0 mt-[0.5cqw] text-[2.15cqw] font-medium leading-tight text-white/90">
+                {branch}
+              </p>
+            ) : null;
+          })()}
           <p className="m-0 mt-[0.7cqw] text-[3.05cqw] font-extrabold leading-tight text-[#27AE60]">
             {CERT_TITLE_V1}
           </p>
@@ -506,10 +503,11 @@ function CardPhoto({
   tier: PositionTier;
   frame?: 'v1' | 'v2';
 }) {
-  const frameClass =
+  // Wrapper aspect/height saqlaydi; img object-cover — cho'zilmaydi.
+  const wrapClass =
     frame === 'v1'
-      ? 'w-[22cqw] shrink-0 self-stretch min-h-0 aspect-[3/4] rounded-[1cqw] overflow-hidden border-[0.45cqw] border-sky-300/90 shadow-[0_0_10px_rgba(56,189,248,0.35),0_3px_10px_rgba(0,0,0,0.4)]'
-      : 'w-[24cqw] shrink-0 self-start aspect-[4/5] rounded-[1cqw] overflow-hidden border-[0.5cqw] border-white/85 shadow-[0_3px_10px_rgba(0,0,0,0.4)]';
+      ? 'relative w-[22cqw] shrink-0 self-stretch min-h-0 overflow-hidden rounded-[1cqw] border-[0.45cqw] border-sky-300/90 shadow-[0_0_10px_rgba(56,189,248,0.35),0_3px_10px_rgba(0,0,0,0.4)]'
+      : 'relative w-[24cqw] shrink-0 self-start aspect-[4/5] overflow-hidden rounded-[1cqw] border-[0.5cqw] border-white/85 shadow-[0_3px_10px_rgba(0,0,0,0.4)]';
 
   const src = avatarUrl ? resolveMediaUrl(avatarUrl) : '';
   const [mode, setMode] = useState<'cors' | 'plain' | 'failed'>('cors');
@@ -518,21 +516,25 @@ function CardPhoto({
 
   if (src && mode !== 'failed') {
     return (
-      <img
-        key={mode}
-        src={src}
-        alt=""
-        {...(mode === 'cors' ? { crossOrigin: 'anonymous' as const } : {})}
-        onError={() => setMode((prev) => (prev === 'cors' ? 'plain' : 'failed'))}
-        className={clsx(frameClass, 'object-cover object-[center_top]')}
-      />
+      <div className={wrapClass}>
+        <img
+          key={mode}
+          src={src}
+          alt=""
+          {...(mode === 'cors' ? { crossOrigin: 'anonymous' as const } : {})}
+          onError={() =>
+            setMode((prev) => (prev === 'cors' ? 'plain' : 'failed'))
+          }
+          className="absolute inset-0 h-full w-full object-cover object-[center_top]"
+        />
+      </div>
     );
   }
 
   return (
     <div
       className={clsx(
-        frameClass,
+        wrapClass,
         'flex items-end justify-center',
         '[background:radial-gradient(ellipse_90%_70%_at_50%_18%,rgba(255,255,255,0.16),transparent_70%),linear-gradient(165deg,rgba(255,255,255,0.12),rgba(0,0,0,0.28))]',
       )}
