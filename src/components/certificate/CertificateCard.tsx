@@ -5,7 +5,7 @@ import { CardBackdropV1, V1_FACE_STYLE } from './CardBackdropV1';
 import { CertificateQr } from './CertificateQr';
 import { CertificateRibbons } from './CertificateRibbons';
 import { tierFaceStyle } from './certificate-theme';
-import { formatCardOrgTitle, formatV1BranchLabel } from './org-title';
+import { formatV1BranchLabel } from './org-title';
 import {
   isGoldTier,
   resolvePositionTier,
@@ -27,13 +27,15 @@ const ORG_LINE = `"O'zbekiston milliy elektr tarmoqlari" AJ`;
 const CERT_TITLE_V1 = 'Xodimning bilim sinovi guvohnomasi';
 
 function cardTitle(certificate: EmployeeCertificate) {
-  return formatCardOrgTitle(
+  return formatV1BranchLabel(
     certificate.branchName?.trim() || certificate.organizationTitle?.trim(),
   );
 }
 
 function branchLine(certificate: EmployeeCertificate) {
-  return formatV1BranchLabel(certificate.branchName);
+  return formatV1BranchLabel(
+    certificate.branchName?.trim() || certificate.organizationTitle?.trim(),
+  );
 }
 
 type FaceVariant = 'flip' | 'static';
