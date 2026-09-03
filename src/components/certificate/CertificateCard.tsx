@@ -221,10 +221,10 @@ function CertificateCardFrontV1({
           aria-hidden
         />
 
-        <div className="relative z-[2] flex min-h-0 flex-1 items-start gap-[2.6cqw] pt-0">
+        <div className="relative z-[2] flex min-h-0 flex-1 items-center gap-[2.6cqw] pt-0">
           <CardPhoto avatarUrl={avatarUrl} tier="employee" frame="v1" />
 
-          <dl className="m-0 -mt-[1.2cqw] flex min-w-0 flex-1 flex-col justify-start gap-[0.55cqw] text-left">
+          <dl className="m-0 flex min-w-0 flex-1 flex-col justify-center gap-[0.55cqw] text-left">
             <CardField
               labelUz="Familiyasi"
               labelEn="Surname"
@@ -252,8 +252,8 @@ function CertificateCardFrontV1({
             />
           </dl>
 
-          <div className="relative w-[28cqw] shrink-0 self-stretch">
-            <div className="absolute inset-x-0 bottom-[28.5cqw] text-right">
+          <div className="flex w-[28cqw] shrink-0 flex-col items-center justify-center gap-[1.2cqw]">
+            <div className="text-center">
               <p className="m-0 whitespace-nowrap text-[1.35cqw] font-medium leading-none text-[#B8C9D4]">
                 Guvohnoma raqami{' '}
                 <span className="italic opacity-80">/ Certificate number</span>
@@ -263,14 +263,12 @@ function CertificateCardFrontV1({
               </p>
             </div>
 
-            <div className="absolute inset-x-0 bottom-0 flex flex-col items-center">
-              <div className={ID_CARD_QR_BOX_CLASS}>
-                <CertificateQr value={certificate.verifyUrl} />
-              </div>
-              <p className="m-0 mt-[0.4cqw] whitespace-nowrap text-[1.4cqw] font-medium tracking-wide text-[#B8C9D4]">
-                Scan to verify
-              </p>
+            <div className={ID_CARD_QR_BOX_CLASS}>
+              <CertificateQr value={certificate.verifyUrl} />
             </div>
+            <p className="m-0 whitespace-nowrap text-[1.4cqw] font-medium tracking-wide text-[#B8C9D4]">
+              Scan to verify
+            </p>
           </div>
         </div>
       </div>
