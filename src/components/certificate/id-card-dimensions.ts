@@ -16,4 +16,13 @@ export const ID_CARD_SIZE_LABEL = {
 /** PNG eksport — yuqori sifat (≈10 px/mm). */
 export const ID_CARD_EXPORT_WIDTH_PX = 850;
 
-export const ID_CARD_EXPORT_STATIC_CLASS = 'relative w-full aspect-[85/55] rounded-2xl [container-type:inline-size]' as const;
+export const ID_CARD_EXPORT_STATIC_CLASS =
+  'relative w-full aspect-[85/55] rounded-2xl [container-type:inline-size]' as const;
+
+/** 3×4 rasm maydoni (sm) — container ichida nisbiy. */
+export const ID_CARD_PHOTO_CLASS =
+  'relative w-[29.4cqw] h-[31.8cqw] shrink-0 overflow-hidden rounded-[1cqw]' as const;
+
+/** QR maydoni. */
+export const ID_CARD_QR_BOX_CLASS =
+  'aspect-square w-[25.3cqw] shrink-0 rounded-[1cqw] bg-white p-[0.85cqw] shadow-[0_2px_8px_rgba(0,0,0,0.35)]' as const;
