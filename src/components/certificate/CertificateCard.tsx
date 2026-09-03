@@ -221,10 +221,10 @@ function CertificateCardFrontV1({
           aria-hidden
         />
 
-        <div className="relative z-[2] flex min-h-0 flex-1 items-start gap-[2.6cqw] pt-[1.2cqw]">
+        <div className="relative z-[2] flex min-h-0 flex-1 items-start gap-[2.6cqw] pt-0">
           <CardPhoto avatarUrl={avatarUrl} tier="employee" frame="v1" />
 
-          <dl className="m-0 flex min-w-0 flex-1 flex-col justify-start gap-[1cqw] pt-0 text-left">
+          <dl className="m-0 -mt-[1.2cqw] flex min-w-0 flex-1 flex-col justify-start gap-[0.55cqw] text-left">
             <CardField
               labelUz="Familiyasi"
               labelEn="Surname"
@@ -252,22 +252,22 @@ function CertificateCardFrontV1({
             />
           </dl>
 
-          <div className="flex w-[28cqw] shrink-0 flex-col items-end justify-end gap-[1.2cqw] self-stretch pb-[0.2cqw]">
-            <div className="w-full text-right">
+          <div className="relative w-[28cqw] shrink-0 self-stretch">
+            <div className="absolute inset-x-0 bottom-[28.5cqw] text-right">
               <p className="m-0 whitespace-nowrap text-[1.35cqw] font-medium leading-none text-[#B8C9D4]">
                 Guvohnoma raqami{' '}
                 <span className="italic opacity-80">/ Certificate number</span>
               </p>
-              <p className="m-0 mt-[0.35cqw] text-[3.6cqw] font-extrabold leading-none tracking-wide text-[#F2C94C]">
+              <p className="m-0 mt-[0.3cqw] text-[3.6cqw] font-extrabold leading-none tracking-wide text-[#F2C94C]">
                 {certificate.certificateNumber || '—'}
               </p>
             </div>
 
-            <div className="flex w-full flex-col items-center">
+            <div className="absolute inset-x-0 bottom-0 flex flex-col items-center">
               <div className={ID_CARD_QR_BOX_CLASS}>
                 <CertificateQr value={certificate.verifyUrl} />
               </div>
-              <p className="m-0 mt-[0.5cqw] whitespace-nowrap text-[1.4cqw] font-medium tracking-wide text-[#B8C9D4]">
+              <p className="m-0 mt-[0.4cqw] whitespace-nowrap text-[1.4cqw] font-medium tracking-wide text-[#B8C9D4]">
                 Scan to verify
               </p>
             </div>
