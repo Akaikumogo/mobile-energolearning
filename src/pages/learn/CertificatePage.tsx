@@ -10,6 +10,7 @@ import {
   CertificateCardBack,
   CertificateCardFront,
   formatCertificateDate,
+  type CertificateCardDesign,
 } from '@/components/certificate/CertificateCard';
 import {
   captureCertificatePng,
@@ -44,6 +45,7 @@ export default function CertificatePage() {
   const [busy, setBusy] = useState<'save' | 'share' | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [design, setDesign] = useState<CertificateCardDesign>('v1');
 
   const { data: certificate, isLoading } = useQuery({
     queryKey: ['my-certificate'],
@@ -164,9 +166,45 @@ export default function CertificatePage() {
               ru: 'Источник: ENERGO ID',
             })}
           </p>
+
+          <div
+            className="mb-3 flex justify-center"
+            role="group"
+            aria-label="Card design"
+          >
+            <div className="inline-flex rounded-xl border border-slate-200 p-0.5 dark:border-[var(--learn-border)]">
+              <button
+                type="button"
+                className={clsx(
+                  'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
+                  design === 'v1'
+                    ? 'bg-gradient-to-r from-brand-from to-brand-to text-white'
+                    : 'text-slate-600 dark:text-slate-300',
+                )}
+                onClick={() => setDesign('v1')}
+              >
+                {t({ uz: '1-variant', en: 'Variant 1', ru: 'Вариант 1' })}
+              </button>
+              <button
+                type="button"
+                className={clsx(
+                  'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
+                  design === 'v2'
+                    ? 'bg-gradient-to-r from-brand-from to-brand-to text-white'
+                    : 'text-slate-600 dark:text-slate-300',
+                )}
+                onClick={() => setDesign('v2')}
+              >
+                {t({ uz: '2-variant', en: 'Variant 2', ru: 'Вариант 2' })}
+              </button>
+            </div>
+          </div>
+
           <CertificateCard
+            key={design}
             certificate={certificate}
             avatarUrl={photoDataUrl ?? photoUrl}
+            design={design}
           />
 
           <p className="mt-3 text-center text-xs text-slate-500 dark:text-[var(--learn-muted)]">
@@ -262,8 +300,13 @@ export default function CertificatePage() {
               certificate={certificate}
               avatarUrl={photoDataUrl}
               variant="static"
+              design={design}
             />
-            <CertificateCardBack certificate={certificate} variant="static" />
+            <CertificateCardBack
+              certificate={certificate}
+              variant="static"
+              design={design}
+            />
           </div>
         </>
       )}
