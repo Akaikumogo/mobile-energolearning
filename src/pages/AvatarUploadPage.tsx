@@ -316,6 +316,48 @@ export default function AvatarUploadPage() {
           </div>
         </div>
 
+        {!showCrop ? (
+          <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-white backdrop-blur">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-300/90">
+              {t({
+                uz: 'Rasm shartlari',
+                en: 'Photo requirements',
+                ru: 'Требования к фото',
+              })}
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-snug text-slate-200">
+              <li>
+                {t({
+                  uz: 'Format: JPG, PNG, WEBP — hajm 5 MB gacha',
+                  en: 'Format: JPG, PNG, WEBP — up to 5 MB',
+                  ru: 'Формат: JPG, PNG, WEBP — до 5 МБ',
+                })}
+              </li>
+              <li>
+                {t({
+                  uz: 'Yuz aniq ko‘rinsin (passport/guvohnoma uslubi)',
+                  en: 'Face clearly visible (ID-style)',
+                  ru: 'Лицо чётко видно',
+                })}
+              </li>
+              <li>
+                {t({
+                  uz: 'Orqa fon oq bo‘lishi shart',
+                  en: 'White background required',
+                  ru: 'Белый фон обязателен',
+                })}
+              </li>
+              <li>
+                {t({
+                  uz: 'Bir kishi — oldindan, qorong‘u/blur bo‘lmasin',
+                  en: 'One person, front-facing, not dark/blurry',
+                  ru: 'Один человек, анфас, без размытия',
+                })}
+              </li>
+            </ul>
+          </div>
+        ) : null}
+
         <div className="rounded-3xl border border-white/15 bg-white/95 p-4 shadow-2xl backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
           {error && (
             <p className="mb-3 flex items-start gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">
