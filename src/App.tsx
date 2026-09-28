@@ -21,6 +21,7 @@ import LeaderboardPage from '@/pages/learn/LeaderboardPage';
 import LevelPage from '@/pages/learn/LevelPage';
 import TheoryLessonPage from '@/pages/learn/TheoryLessonPage';
 import AiAssistantPage from '@/pages/learn/AiAssistantPage';
+import NewsPage from '@/pages/learn/NewsPage';
 import AudioLibraryPage from '@/pages/learn/audio/AudioLibraryPage';
 import AudioBookDetailPage from '@/pages/learn/audio/AudioBookDetailPage';
 
@@ -51,6 +52,7 @@ export default function App() {
                   <Route path="rating" element={<LeaderboardPage />} />
                   <Route path="assistant" element={<AiAssistantPage />} />
                   <Route path="profile" element={<ProfilePage />} />
+                  <Route path="news" element={<NewsPage />} />
                   <Route path="certificate" element={<CertificatePage />} />
                   <Route path="qr" element={<IdCardQrPage />} />
                   <Route path="library" element={<AudioLibraryPage />} />

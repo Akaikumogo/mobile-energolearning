@@ -1,62 +1,40 @@
-const letterMap: Record<string, string> = {
-  a: 'а',
-  b: 'б',
-  d: 'д',
-  e: 'е',
-  f: 'ф',
-  g: 'г',
-  h: 'ҳ',
-  i: 'и',
-  j: 'ж',
-  k: 'к',
-  l: 'л',
-  m: 'м',
-  n: 'н',
-  o: 'о',
-  p: 'п',
-  q: 'қ',
-  r: 'р',
-  s: 'с',
-  t: 'т',
-  u: 'у',
-  v: 'в',
-  x: 'х',
-  y: 'й',
-  z: 'з',
-};
+import TransliteratorExport from 'lotin-kirill';
 
-const digraphs: Array<[RegExp, string]> = [
-  [/o['`‘’ʼʻ]?\b/gi, 'ў'],
-  [/g['`‘’ʼʻ]/gi, 'ғ'],
-  [/sh/gi, 'ш'],
-  [/ch/gi, 'ч'],
-  [/yo/gi, 'ё'],
-  [/yu/gi, 'ю'],
-  [/ya/gi, 'я'],
-  [/ye/gi, 'е'],
-  [/ts/gi, 'ц'],
-];
+// Paket CommonJS: Node ESM `default`ni modul obyekti sifatida beradi, Vite esa klassning o'zini.
+const Transliterator =
+  (TransliteratorExport as unknown as { default?: typeof TransliteratorExport })
+    .default ?? TransliteratorExport;
 
-const preserveCase = (source: string, target: string) => {
-  if (source.toUpperCase() === source) return target.toUpperCase();
-  if (source[0] && source[0].toUpperCase() === source[0]) {
-    return target[0].toUpperCase() + target.slice(1);
-  }
-  return target;
-};
+const transliterator = new Transliterator([
+  ['sentabr', 'сентябрь'],
+  ['oktabr', 'октябрь'],
+  ['tsex', 'цех'],
+  ['ElektroLearn', 'ElektroLearn'],
+  ['XP', 'XP'],
+  ['QR', 'QR'],
+  ['AI', 'AI'],
+  ['ID', 'ID'],
+  ['PDF', 'PDF'],
+]);
+
+const CACHE_LIMIT = 2000;
+const cache = new Map<string, string>();
+
+const HAS_LATIN = /[A-Za-z]/;
 
 export const latinTextToCyrillic = (text: string): string => {
-  let out = text;
+  if (!text || !HAS_LATIN.test(text)) return text;
+  const cached = cache.get(text);
+  if (cached !== undefined) return cached;
 
-  digraphs.forEach(([matcher, value]) => {
-    out = out.replace(matcher, (m) => preserveCase(m, value));
-  });
+  let out: string;
+  try {
+    out = transliterator.textToCyrillic(text);
+  } catch {
+    out = text;
+  }
 
-  out = out.replace(/[A-Za-z]/g, (char) => {
-    const mapped = letterMap[char.toLowerCase()];
-    if (!mapped) return char;
-    return preserveCase(char, mapped);
-  });
-
+  if (cache.size >= CACHE_LIMIT) cache.clear();
+  cache.set(text, out);
   return out;
 };

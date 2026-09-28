@@ -1,5 +1,10 @@
 import axios, { type AxiosError } from 'axios';
 import type { EmployeeCertificate } from '@/components/certificate/types';
+import {
+  isContentUrl,
+  isCyrillicLangSelected,
+  transliterateContent,
+} from '@/utils/cyrillicContent';
 
 export type { EmployeeCertificate };
 
@@ -491,6 +496,15 @@ export type AudioBookDetail = {
   chapters: AudioChapter[];
 };
 
+export type AppNotification = {
+  id: string;
+  title: string;
+  body: string;
+  data: Record<string, unknown> | null;
+  isRead: boolean;
+  createdAt: string;
+};
+
 class MobileApiService {
   private api: ReturnType<typeof axios.create>;
   private isRefreshing = false;
@@ -513,7 +527,12 @@ class MobileApiService {
     });
 
     this.api.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        if (isCyrillicLangSelected() && isContentUrl(response.config.url)) {
+          response.data = transliterateContent(response.data);
+        }
+        return response;
+      },
       async (error: AxiosError) => {
         const originalRequest = error.config as typeof error.config & {
           _retry?: boolean;
@@ -942,6 +961,15 @@ class MobileApiService {
       '/exams/live/me/next'
     );
     return response.data;
+  }
+
+  async getMyNotifications(): Promise<AppNotification[]> {
+    const response = await this.api.get<AppNotification[]>('/notifications/me');
+    return response.data;
+  }
+
+  async markNotificationRead(id: string): Promise<void> {
+    await this.api.patch(`/notifications/${id}/read`);
   }
 
   async examLiveMyHistory(): Promise<ExamLiveHistoryRow[]> {

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Navigate, Outlet, NavLink } from 'react-router-dom';
 import {
+  Bell,
   Bot,
   Crown,
   Home,
@@ -21,6 +22,8 @@ import {
 } from '@/utils/auth';
 import clsx from 'clsx';
 import MiniPlayer from './audio/components/MiniPlayer';
+import { CyrillicNewsModal } from '@/components/news/CyrillicNewsModal';
+import { useReadNewsIds, visibleLocalNews } from '@/utils/news';
 
 export default function LearnLayout() {
   const { t } = useTranslation();
@@ -58,6 +61,16 @@ export default function LearnLayout() {
     enabled: !blockForOrg,
   });
   const myGlobalRank = globalRankQuery.data?.me?.rank ?? null;
+
+  const notificationsQuery = useQuery({
+    queryKey: ['notifications-me'],
+    queryFn: () => mobileApi.getMyNotifications(),
+    enabled: !blockForOrg,
+  });
+  const readNewsIds = useReadNewsIds();
+  const unreadNewsCount =
+    visibleLocalNews().filter((n) => !readNewsIds.includes(n.id)).length +
+    (notificationsQuery.data?.filter((n) => !n.isRead).length ?? 0);
 
   // Hooks'lardan keyin — aks holda shartli return hook tartibini buzadi.
   if (blockForOrg) {
@@ -116,8 +129,24 @@ export default function LearnLayout() {
             </span>
           </div>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <NavLink
+            to="/learn/news"
+            aria-label={t({ uz: 'Yangiliklar', en: 'News', ru: 'Новости' })}
+            className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white/80 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900/80 dark:text-amber-200"
+          >
+            <Bell size={18} />
+            {unreadNewsCount > 0 ? (
+              <span className="absolute -right-1 -top-1 inline-flex min-w-[1.1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-[1.1rem] text-white">
+                {unreadNewsCount > 9 ? '9+' : unreadNewsCount}
+              </span>
+            ) : null}
+          </NavLink>
+          <ThemeToggle />
+        </div>
       </header>
+
+      <CyrillicNewsModal />
 
       <main className="flex-1 overflow-y-auto pb-[calc(10.5rem+env(safe-area-inset-bottom,0px))]">
         <Outlet />
