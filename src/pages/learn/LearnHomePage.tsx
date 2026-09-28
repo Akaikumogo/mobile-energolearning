@@ -68,7 +68,13 @@ export default function LearnHomePage() {
             {t({ uz: 'Bugungi plan', en: 'Today\'s plan', ru: 'План на сегодня' })}
           </p>
           <p className="text-xs text-slate-500">
-            {dailyPlanQuery.data
+            {dailyPlanQuery.data?.isPlanDay === false
+              ? t({
+                  uz: `Bugun plan yo‘q • Bonus ${dailyPlanQuery.data.bonus?.xpEarned ?? 0}/${(dailyPlanQuery.data.bonus?.max ?? 10) * 10} XP`,
+                  en: `No plan today • Bonus ${dailyPlanQuery.data.bonus?.xpEarned ?? 0}/${(dailyPlanQuery.data.bonus?.max ?? 10) * 10} XP`,
+                  ru: `Сегодня плана нет • Бонус ${dailyPlanQuery.data.bonus?.xpEarned ?? 0}/${(dailyPlanQuery.data.bonus?.max ?? 10) * 10} XP`,
+                })
+              : dailyPlanQuery.data
               ? t({
                   uz: `${dailyPlanQuery.data.correctCount ?? 0}/${dailyPlanQuery.data.dailyGoalCorrect ?? 10} to‘g‘ri javob • ${dailyPlanQuery.data.completionPercent}%`,
                   en: `${dailyPlanQuery.data.correctCount ?? 0}/${dailyPlanQuery.data.dailyGoalCorrect ?? 10} correct • ${dailyPlanQuery.data.completionPercent}%`,

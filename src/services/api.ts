@@ -280,12 +280,25 @@ export type DailyPlanQuestion = MobileQuestion & {
   attemptCount: number;
 };
 
+/** Plan 0 bo'lgan kun bonusi: birinchi xatogacha ketma-ket to'g'ri javoblar. */
+export type DailyPlanBonus = {
+  streak: number;
+  max: number;
+  xpPerAnswer: number;
+  xpEarned: number;
+  ended: boolean;
+  brokenByWrong: boolean;
+};
+
 export type DailyPlanResponse = {
   planDate: string;
   organizationId: string | null;
   targetQuestions: number;
-  /** Kunlik maqsad: shu kunda nechta TO'G'RI javob kerak (10). */
+  /** Kunlik maqsad: shu kunda nechta TO'G'RI javob kerak (0 = plan yo'q). */
   dailyGoalCorrect: number;
+  /** false — bugun plan yo'q (dam olish / bayram), bonus rejimi. */
+  isPlanDay?: boolean;
+  bonus?: DailyPlanBonus | null;
   questionCount: number;
   answeredCount: number;
   /** Bugun to'g'ri javob berilgan (har xil) savollar soni (reja uchun max 10). */
@@ -310,6 +323,8 @@ export type DailyPlanProgress = {
   extraCorrectCount: number;
   wrongCount: number;
   dailyGoalCorrect: number;
+  isPlanDay?: boolean;
+  bonus?: DailyPlanBonus | null;
   completionPercent: number;
   completed: boolean;
 };

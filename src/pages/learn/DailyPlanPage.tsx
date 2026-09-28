@@ -4,7 +4,9 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import {
   BookOpen,
+  CalendarOff,
   CheckCircle2,
+  Gift,
   ClipboardList,
   PartyPopper,
   Play,
@@ -180,8 +182,20 @@ export default function DailyPlanPage() {
   const displayExtra =
     serverExtra +
     (feedback === 'correct' && serverCorrect >= goal ? 1 : 0);
-  const displayPercent = Math.min(100, Math.round((displayCorrect / goal) * 100));
+  const displayPercent =
+    goal > 0 ? Math.min(100, Math.round((displayCorrect / goal) * 100)) : 0;
   const planCompleted = plan?.completed ?? displayCorrect >= goal;
+
+  // Plan 0 kuni (dam olish / bayram): ketma-ket to'g'ri javoblar bonusi.
+  const isBonusDay = (next?.progress.isPlanDay ?? plan?.isPlanDay) === false;
+  const bonus = next?.progress.bonus ?? plan?.bonus ?? null;
+  const bonusMax = bonus?.max ?? 10;
+  const bonusStreak = Math.min(
+    bonusMax,
+    (bonus?.streak ?? 0) + (feedback === 'correct' && lastXpEarned > 0 ? 1 : 0),
+  );
+  const bonusBroken = !!bonus?.brokenByWrong || (isBonusDay && feedback === 'wrong');
+  const bonusEnded = !!bonus?.ended || bonusBroken || bonusStreak >= bonusMax;
 
   const isSubmitting = answerMut.isPending || matchingMut.isPending;
   const pickable = !feedback && !isSubmitting;
@@ -246,6 +260,112 @@ export default function DailyPlanPage() {
           })}
     </div>
   ) : null;
+
+  // ─── SUMMARY: plan yo'q (bonus kuni) ─────────────────────────
+  if (phase === 'summary' && isBonusDay) {
+    return (
+      <div className="px-4 py-5">
+        <CheerfulBackLink to="/learn">
+          {t({ uz: 'Orqaga', en: 'Back', ru: 'Назад' })}
+        </CheerfulBackLink>
+
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 rounded-3xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-sky-50 p-5 text-center dark:border-[var(--learn-border)] dark:from-[var(--learn-card)] dark:to-[var(--learn-surface)]"
+        >
+          <CalendarOff className="mx-auto h-10 w-10 text-slate-500 dark:text-slate-300" />
+          <p className="mt-2 text-xl font-extrabold text-slate-900 dark:text-white">
+            {t({ uz: 'Bugun uchun plan yo‘q', en: 'No plan for today', ru: 'На сегодня плана нет' })}
+          </p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {t({ uz: 'Dam olish kuni — yaxshi dam oling!', en: 'Day off — enjoy your rest!', ru: 'Выходной — хорошего отдыха!' })}
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="mt-4 rounded-3xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50 p-5 dark:border-amber-500/35 dark:from-amber-950/30 dark:to-orange-950/20"
+        >
+          <div className="flex items-center gap-3">
+            <div className="rounded-2xl bg-amber-500 p-3 text-white">
+              <Gift className="h-6 w-6" />
+            </div>
+            <div className="flex-1">
+              <p className="text-lg font-extrabold text-amber-900 dark:text-amber-100">
+                {t({ uz: 'Qo‘shimcha XP oling', en: 'Earn bonus XP', ru: 'Получите бонус XP' })}
+              </p>
+              <p className="text-xs text-amber-800/80 dark:text-amber-200/80">
+                {t({
+                  uz: `Ketma-ket ${bonusMax} ta to‘g‘ri javob — ${bonusMax * 10} XP. Birinchi xatoda bonus tugaydi.`,
+                  en: `${bonusMax} correct in a row — ${bonusMax * 10} XP. The first mistake ends the bonus.`,
+                  ru: `${bonusMax} верных подряд — ${bonusMax * 10} XP. Первая ошибка завершает бонус.`,
+                })}
+              </p>
+            </div>
+          </div>
+
+          <BonusDots streak={bonus?.streak ?? 0} max={bonusMax} broken={!!bonus?.brokenByWrong} />
+
+          <div className="mt-3 flex items-center justify-between text-sm font-bold">
+            <span className="tabular-nums text-amber-900 dark:text-amber-100">
+              {bonus?.streak ?? 0} / {bonusMax}
+            </span>
+            <span className="inline-flex items-center gap-1 tabular-nums text-amber-700 dark:text-amber-300">
+              <Zap className="h-4 w-4 fill-current" /> +{bonus?.xpEarned ?? 0} XP
+            </span>
+          </div>
+        </motion.div>
+
+        <div className="mt-5 space-y-3">
+          {bonus?.ended ? (
+            <div
+              className={clsx(
+                'rounded-2xl px-4 py-3 text-center text-sm font-semibold',
+                bonus.brokenByWrong
+                  ? 'bg-rose-50 text-rose-800 dark:bg-rose-950/30 dark:text-rose-200'
+                  : 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200',
+              )}
+            >
+              {bonus.brokenByWrong
+                ? t({
+                    uz: `Bugungi bonus tugadi. Siz ${bonus.xpEarned} XP oldingiz.`,
+                    en: `Today's bonus is over. You earned ${bonus.xpEarned} XP.`,
+                    ru: `Бонус на сегодня завершён. Вы получили ${bonus.xpEarned} XP.`,
+                  })
+                : t({
+                    uz: `Ajoyib! Bonus to‘liq olindi — ${bonus.xpEarned} XP 🎉`,
+                    en: `Great! Full bonus earned — ${bonus.xpEarned} XP 🎉`,
+                    ru: `Отлично! Бонус получен полностью — ${bonus.xpEarned} XP 🎉`,
+                  })}
+            </div>
+          ) : (
+            energyBanner
+          )}
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.98 }}
+            onClick={startQuiz}
+            className={clsx(
+              'w-full rounded-2xl py-4 text-base font-bold shadow-lg transition',
+              bonus?.ended
+                ? 'border-2 border-blue-200 bg-white text-blue-700 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-[var(--learn-blue)]'
+                : 'bg-amber-500 text-white shadow-amber-500/25',
+            )}
+          >
+            <span className="inline-flex items-center justify-center gap-2">
+              <Play className="h-5 w-5" />
+              {bonus?.ended
+                ? t({ uz: 'Mashq qilish (XP siz)', en: 'Practice (no XP)', ru: 'Практика (без XP)' })
+                : t({ uz: 'Bonusni boshlash', en: 'Start bonus', ru: 'Начать бонус' })}
+            </span>
+          </motion.button>
+        </div>
+      </div>
+    );
+  }
 
   // ─── SUMMARY ekrani ──────────────────────────────────────────
   if (phase === 'summary') {
@@ -417,17 +537,35 @@ export default function DailyPlanPage() {
       {/* Plan counter + energiya pill */}
       <div className="mt-3 mb-4 flex items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-slate-50 p-3 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]">
         <span className="relative inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-extrabold tabular-nums text-blue-700 shadow-sm dark:bg-[var(--learn-card)] dark:text-[var(--learn-gold)]">
-          <ClipboardList className="h-3.5 w-3.5" />
+          {isBonusDay ? (
+            <Gift className="h-3.5 w-3.5" />
+          ) : (
+            <ClipboardList className="h-3.5 w-3.5" />
+          )}
           <motion.span
-            key={displayCorrect}
+            key={isBonusDay ? `b-${bonusStreak}` : displayCorrect}
             initial={{ scale: 1.6, color: '#f59e0b' }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 400, damping: 15 }}
           >
-            {displayCorrect}
+            {isBonusDay ? bonusStreak : displayCorrect}
           </motion.span>
-          <span>/ {goal}</span>
-          {displayExtra > 0 && (
+          <span>/ {isBonusDay ? bonusMax : goal}</span>
+          {isBonusDay && bonusEnded && (
+            <span
+              className={clsx(
+                'ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold',
+                bonusBroken
+                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300'
+                  : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+              )}
+            >
+              {bonusBroken
+                ? t({ uz: 'bonus tugadi', en: 'bonus over', ru: 'бонус завершён' })
+                : t({ uz: 'to‘liq', en: 'full', ru: 'полный' })}
+            </span>
+          )}
+          {!isBonusDay && displayExtra > 0 && (
             <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
               +{displayExtra}
             </span>
@@ -476,7 +614,13 @@ export default function DailyPlanPage() {
       </div>
 
       <div className="mb-4">
-        <LearnProgressBar value={displayPercent} />
+        <LearnProgressBar
+          value={
+            isBonusDay
+              ? Math.round((bonusStreak / bonusMax) * 100)
+              : displayPercent
+          }
+        />
       </div>
 
       {nextQuery.isLoading || nextQuery.isFetching ? (
@@ -687,7 +831,7 @@ export default function DailyPlanPage() {
                     <Zap className="h-3.5 w-3.5" /> -1
                   </span>
                 </div>
-                {feedback === 'correct' && lastXpMessage ? (
+                {lastXpMessage && (feedback === 'correct' || isBonusDay) ? (
                   <p className="mt-2 text-sm font-medium text-amber-800 dark:text-amber-200">
                     {lastXpMessage}
                   </p>
@@ -718,6 +862,34 @@ export default function DailyPlanPage() {
           )}
         </motion.div>
       ) : null}
+    </div>
+  );
+}
+
+function BonusDots({
+  streak,
+  max,
+  broken,
+}: {
+  streak: number;
+  max: number;
+  broken: boolean;
+}) {
+  return (
+    <div className="mt-4 flex gap-1.5">
+      {Array.from({ length: max }).map((_, i) => (
+        <span
+          key={i}
+          className={clsx(
+            'h-2.5 flex-1 rounded-full',
+            i < streak
+              ? 'bg-amber-500'
+              : broken && i === streak
+                ? 'bg-rose-400'
+                : 'bg-amber-200/70 dark:bg-amber-900/40',
+          )}
+        />
+      ))}
     </div>
   );
 }
