@@ -290,6 +290,28 @@ export type DailyPlanBonus = {
   brokenByWrong: boolean;
 };
 
+export type MyPlanCalendarDay = {
+  date: string;
+  isWeekend: boolean;
+  isDayOff: boolean;
+  holidayName: string | null;
+  baseGoal: number;
+  userGoal: number | null;
+  note: string | null;
+  goal: number;
+  calendarApplies: boolean;
+};
+
+export type MyPlanCalendar = {
+  month: string;
+  defaultGoal: number;
+  dailyPlanGoal: number | null;
+  calendarStart: string;
+  workingDays: number;
+  totalGoal: number;
+  days: MyPlanCalendarDay[];
+};
+
 export type DailyPlanResponse = {
   planDate: string;
   organizationId: string | null;
@@ -781,6 +803,14 @@ class MobileApiService {
   async getPublicIdCard(id: string): Promise<PublicIdCard> {
     const response = await this.api.get<PublicIdCard>(
       `/public/id-card/${encodeURIComponent(id)}`,
+    );
+    return response.data;
+  }
+
+  async getMyPlanCalendar(month: string): Promise<MyPlanCalendar> {
+    const response = await this.api.get<MyPlanCalendar>(
+      '/mobile/daily-plan/calendar',
+      { params: { month } },
     );
     return response.data;
   }

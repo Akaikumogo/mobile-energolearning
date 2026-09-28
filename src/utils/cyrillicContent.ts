@@ -14,6 +14,7 @@ const TEXT_KEYS = new Set([
   'examTitle',
   'chapterTitle',
   'body',
+  'holidayName',
 ]);
 
 /** Faqat o'quv kontenti qaytaradigan endpointlar (ism, email, URL'larga tegmaymiz). */

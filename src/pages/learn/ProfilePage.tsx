@@ -20,6 +20,7 @@ import mobileApi, { resolveMediaUrl } from '@/services/api';
 import { queryClient } from '@/queryClient';
 import { useApp } from '@/hooks/useApp';
 import { CertificateCard } from '@/components/certificate/CertificateCard';
+import { MyPlanCalendarCard } from '@/components/plan/MyPlanCalendarCard';
 import { resolveMyCertificate } from '@/utils/resolveMyCertificate';
 import { formatPersonName } from '@/utils/personName';
 import clsx from 'clsx';
@@ -166,6 +167,8 @@ export default function ProfilePage() {
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
+
+      <MyPlanCalendarCard />
 
       <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]">
         <div className="flex items-center justify-between gap-3">
