@@ -158,6 +158,7 @@ export function resolveMediaUrl(url: string | null | undefined): string {
 export type Role = 'SUPERADMIN' | 'MODERATOR' | 'USER';
 
 export type UserProfile = {
+  adminAccess?: boolean;
   id: string;
   email: string;
   firstName: string;

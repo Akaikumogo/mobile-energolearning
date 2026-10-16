@@ -10,6 +10,7 @@ import {
   Trophy,
   User,
   Zap,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -29,6 +30,12 @@ export default function LearnLayout() {
   const { t } = useTranslation();
   const user = readCachedUser();
   const blockForOrg = needsOrganizationSelection(user);
+  // Admin panelga o'tish: faqat ruxsati bor foydalanuvchi va web (bir domen) rejimida.
+  const isNativeApp = Boolean(
+    (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+      .Capacitor?.isNativePlatform?.(),
+  );
+  const showAdminLink = user?.adminAccess === true && !isNativeApp;
 
   const { data: progress } = useQuery({
     queryKey: ['progress-me'],
@@ -82,6 +89,18 @@ export default function LearnLayout() {
   return (
     <div className="learn-app flex min-h-dvh flex-col bg-slate-50 dark:bg-[var(--learn-bg)]">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/90 px-safe-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] backdrop-blur dark:border-[var(--learn-border)] dark:bg-[var(--learn-surface)]/95 dark:backdrop-blur-md">
+        <div className="flex items-center gap-3">
+        {showAdminLink ? (
+          <a
+            href="/admin/dashboard/home"
+            title="Admin panel"
+            aria-label="Admin panel"
+            className="inline-flex shrink-0 flex-col items-center gap-0.5 rounded-xl border border-amber-200/80 bg-amber-50/90 px-2 py-1 text-[10px] font-semibold text-amber-700 dark:border-[var(--learn-gold)]/45 dark:bg-[#2d2410]/70 dark:text-[var(--learn-gold)]"
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            <span>Admin panel</span>
+          </a>
+        ) : null}
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-[var(--learn-gold)]">
             ElektroLearn
@@ -128,6 +147,7 @@ export default function LearnLayout() {
               ) : null}
             </span>
           </div>
+        </div>
         </div>
         <div className="flex items-center gap-2">
           <NavLink
