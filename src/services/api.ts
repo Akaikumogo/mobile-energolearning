@@ -686,6 +686,20 @@ class MobileApiService {
     return payload;
   }
 
+  /** Admin panel bilan bir xil local login (SUPERADMIN/MODERATOR/ACCOUNTING) - /auth/admin/login. */
+  async adminLogin(email: string, password: string): Promise<LoginResponse> {
+    const response = await this.api.post<LoginResponse>('/auth/admin/login', {
+      email,
+      password,
+    });
+    const payload = response.data;
+    localStorage.setItem('accessToken', payload.data.accessToken);
+    localStorage.setItem('refreshToken', payload.data.refreshToken);
+    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('user', JSON.stringify(payload.data.user));
+    return payload;
+  }
+
   /** @deprecated OAuth orqali kirish ishlating */
   async login(loginOrEmail: string, password: string): Promise<LoginResponse> {
     // Backend `login` ham `email` ham qabul qiladi (NES 1C dan sync qilingan
