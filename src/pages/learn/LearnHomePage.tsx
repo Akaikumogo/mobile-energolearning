@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ClipboardList, Lock } from 'lucide-react';
+import { ClipboardList, Lock, ZapOff } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useEnergyCountdown } from '@/hooks/useEnergyCountdown';
 import mobileApi from '@/services/api';
 import clsx from 'clsx';
 
@@ -17,6 +18,12 @@ export default function LearnHomePage() {
     queryKey: ['daily-plan-today'],
     queryFn: () => mobileApi.getDailyPlanToday(),
   });
+
+  const heartsCount = data?.hearts?.heartsCount ?? 0;
+  const outOfEnergy = data?.hearts != null && heartsCount <= 0;
+  const regenCountdown = useEnergyCountdown(
+    outOfEnergy ? data?.hearts?.nextRegenAt : null,
+  );
 
   if (isLoading) {
     return (
@@ -58,33 +65,59 @@ export default function LearnHomePage() {
 
       <Link
         to="/learn/daily-plan"
-        className="mb-6 flex items-center gap-4 rounded-2xl border border-blue-200 bg-white px-4 py-4 shadow-sm transition hover:border-blue-400 dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)]"
+        className={clsx(
+          'mb-6 flex items-center gap-4 rounded-2xl border px-4 py-4 shadow-sm transition dark:bg-[var(--learn-card)]',
+          outOfEnergy
+            ? 'border-amber-300 bg-amber-50 hover:border-amber-400 dark:border-amber-500/40 dark:bg-amber-950/25'
+            : 'border-blue-200 bg-white hover:border-blue-400 dark:border-[var(--learn-border)]',
+        )}
       >
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-white">
-          <ClipboardList className="h-6 w-6" />
+        <div
+          className={clsx(
+            'flex h-12 w-12 items-center justify-center rounded-xl text-white',
+            outOfEnergy ? 'bg-amber-500' : 'bg-blue-600',
+          )}
+        >
+          {outOfEnergy ? (
+            <ZapOff className="h-6 w-6" />
+          ) : (
+            <ClipboardList className="h-6 w-6" />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-slate-900 dark:text-white">
-            {t({ uz: 'Bugungi plan', en: 'Today\'s plan', ru: 'План на сегодня' })}
+            {t({ uz: 'Bugungi plan', en: "Today's plan", ru: 'План на сегодня' })}
           </p>
-          <p className="text-xs text-slate-500">
-            {dailyPlanQuery.data?.isPlanDay === false
-              ? t({
-                  uz: `Bugun plan yo‘q • Bonus ${dailyPlanQuery.data.bonus?.xpEarned ?? 0}/${(dailyPlanQuery.data.bonus?.max ?? 10) * 10} XP`,
-                  en: `No plan today • Bonus ${dailyPlanQuery.data.bonus?.xpEarned ?? 0}/${(dailyPlanQuery.data.bonus?.max ?? 10) * 10} XP`,
-                  ru: `Сегодня плана нет • Бонус ${dailyPlanQuery.data.bonus?.xpEarned ?? 0}/${(dailyPlanQuery.data.bonus?.max ?? 10) * 10} XP`,
-                })
-              : dailyPlanQuery.data
-              ? t({
-                  uz: `${dailyPlanQuery.data.correctCount ?? 0}/${dailyPlanQuery.data.dailyGoalCorrect ?? 10} to‘g‘ri javob • ${dailyPlanQuery.data.completionPercent}%`,
-                  en: `${dailyPlanQuery.data.correctCount ?? 0}/${dailyPlanQuery.data.dailyGoalCorrect ?? 10} correct • ${dailyPlanQuery.data.completionPercent}%`,
-                  ru: `${dailyPlanQuery.data.correctCount ?? 0}/${dailyPlanQuery.data.dailyGoalCorrect ?? 10} верных • ${dailyPlanQuery.data.completionPercent}%`,
-                })
-              : t({
-                  uz: 'Kuniga 10 ta to‘g‘ri javob',
-                  en: '10 correct answers a day',
-                  ru: '10 верных ответов в день',
-                })}
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {outOfEnergy
+              ? regenCountdown
+                ? t({
+                    uz: `Energiya tugadi • Keyingi: ${regenCountdown}`,
+                    en: `Out of energy • Next: ${regenCountdown}`,
+                    ru: `Нет энергии • Через: ${regenCountdown}`,
+                  })
+                : t({
+                    uz: 'Energiya tugadi • Har soatda +1',
+                    en: 'Out of energy • +1 every hour',
+                    ru: 'Нет энергии • +1 каждый час',
+                  })
+              : dailyPlanQuery.data?.isPlanDay === false
+                ? t({
+                    uz: `Bugun plan yo‘q • Bonus ${dailyPlanQuery.data.bonus?.xpEarned ?? 0}/${(dailyPlanQuery.data.bonus?.max ?? 10) * 10} XP`,
+                    en: `No plan today • Bonus ${dailyPlanQuery.data.bonus?.xpEarned ?? 0}/${(dailyPlanQuery.data.bonus?.max ?? 10) * 10} XP`,
+                    ru: `Сегодня плана нет • Бонус ${dailyPlanQuery.data.bonus?.xpEarned ?? 0}/${(dailyPlanQuery.data.bonus?.max ?? 10) * 10} XP`,
+                  })
+                : dailyPlanQuery.data
+                  ? t({
+                      uz: `${dailyPlanQuery.data.correctCount ?? 0}/${dailyPlanQuery.data.dailyGoalCorrect ?? 10} to‘g‘ri javob • ${dailyPlanQuery.data.completionPercent}%`,
+                      en: `${dailyPlanQuery.data.correctCount ?? 0}/${dailyPlanQuery.data.dailyGoalCorrect ?? 10} correct • ${dailyPlanQuery.data.completionPercent}%`,
+                      ru: `${dailyPlanQuery.data.correctCount ?? 0}/${dailyPlanQuery.data.dailyGoalCorrect ?? 10} верных • ${dailyPlanQuery.data.completionPercent}%`,
+                    })
+                  : t({
+                      uz: 'Kuniga 10 ta to‘g‘ri javob',
+                      en: '10 correct answers a day',
+                      ru: '10 верных ответов в день',
+                    })}
           </p>
         </div>
       </Link>

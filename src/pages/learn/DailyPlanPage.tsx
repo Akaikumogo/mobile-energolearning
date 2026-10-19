@@ -83,11 +83,14 @@ export default function DailyPlanPage() {
     queryFn: () => mobileApi.getMyProgress(),
   });
   const hearts = progressQuery.data?.hearts ?? null;
+  const heartsKnown = progressQuery.isSuccess;
   const heartsMax = hearts?.maxHearts ?? 5;
   const heartsCount = hearts?.heartsCount ?? heartsMax;
-  const noEnergyForWrong = hearts != null && hearts.heartsCount <= 0;
+  // Energiya 0 → hech qanday javob (to‘g‘ri ham) yuborilmasin —
+  // aks holda faqat to‘g‘ri variant "ishlayotgandek" ko‘rinadi.
+  const outOfEnergy = heartsKnown && heartsCount <= 0;
   const regenCountdown = useEnergyCountdown(
-    noEnergyForWrong ? hearts?.nextRegenAt : null,
+    outOfEnergy ? hearts?.nextRegenAt : null,
   );
 
   const applyHearts = (h: HeartsState | null | undefined) => {
@@ -198,7 +201,7 @@ export default function DailyPlanPage() {
   const bonusEnded = !!bonus?.ended || bonusBroken || bonusStreak >= bonusMax;
 
   const isSubmitting = answerMut.isPending || matchingMut.isPending;
-  const pickable = !feedback && !isSubmitting;
+  const pickable = !feedback && !isSubmitting && !outOfEnergy;
 
   const resetQuestionState = () => {
     setFeedback(null);
@@ -217,9 +220,26 @@ export default function DailyPlanPage() {
   };
 
   const startQuiz = () => {
+    if (outOfEnergy) return;
     resetQuestionState();
     queryClient.invalidateQueries({ queryKey: ['daily-plan-next'] });
     setPhase('quiz');
+  };
+
+  const submitChoice = (questionId: string, selectedOptionId: string) => {
+    if (outOfEnergy || feedback || isSubmitting || submitLockRef.current) return;
+    submitLockRef.current = true;
+    setSubmitError(null);
+    answerMut.mutate({ questionId, selectedOptionId });
+  };
+
+  const submitMatch = (
+    questionId: string,
+    pairs: MatchingPair[],
+  ) => {
+    if (outOfEnergy || feedback || isSubmitting || submitLockRef.current) return;
+    submitLockRef.current = true;
+    matchingMut.mutate({ questionId, pairs });
   };
 
   const backToSummary = () => {
@@ -244,7 +264,7 @@ export default function DailyPlanPage() {
   }
 
   // ─── Umumiy: energiya banneri ────────────────────────────────
-  const energyBanner = noEnergyForWrong ? (
+  const energyBanner = outOfEnergy ? (
     <div className="flex items-center gap-2 rounded-xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
       <ZapOff className="h-5 w-5 shrink-0" />
       {regenCountdown
@@ -341,27 +361,28 @@ export default function DailyPlanPage() {
                     ru: `Отлично! Бонус получен полностью — ${bonus.xpEarned} XP 🎉`,
                   })}
             </div>
-          ) : (
-            energyBanner
+          ) : null}
+          {energyBanner}
+          {!outOfEnergy && (
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.98 }}
+              onClick={startQuiz}
+              className={clsx(
+                'w-full rounded-2xl py-4 text-base font-bold shadow-lg transition',
+                bonus?.ended
+                  ? 'border-2 border-blue-200 bg-white text-blue-700 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-[var(--learn-blue)]'
+                  : 'bg-amber-500 text-white shadow-amber-500/25',
+              )}
+            >
+              <span className="inline-flex items-center justify-center gap-2">
+                <Play className="h-5 w-5" />
+                {bonus?.ended
+                  ? t({ uz: 'Mashq qilish (XP siz)', en: 'Practice (no XP)', ru: 'Практика (без XP)' })
+                  : t({ uz: 'Bonusni boshlash', en: 'Start bonus', ru: 'Начать бонус' })}
+              </span>
+            </motion.button>
           )}
-          <motion.button
-            type="button"
-            whileTap={{ scale: 0.98 }}
-            onClick={startQuiz}
-            className={clsx(
-              'w-full rounded-2xl py-4 text-base font-bold shadow-lg transition',
-              bonus?.ended
-                ? 'border-2 border-blue-200 bg-white text-blue-700 shadow-sm dark:border-[var(--learn-border)] dark:bg-[var(--learn-card)] dark:text-[var(--learn-blue)]'
-                : 'bg-amber-500 text-white shadow-amber-500/25',
-            )}
-          >
-            <span className="inline-flex items-center justify-center gap-2">
-              <Play className="h-5 w-5" />
-              {bonus?.ended
-                ? t({ uz: 'Mashq qilish (XP siz)', en: 'Practice (no XP)', ru: 'Практика (без XP)' })
-                : t({ uz: 'Bonusni boshlash', en: 'Start bonus', ru: 'Начать бонус' })}
-            </span>
-          </motion.button>
         </div>
       </div>
     );
@@ -482,40 +503,46 @@ export default function DailyPlanPage() {
                   ru: 'К модулям',
                 })}
               </Link>
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.98 }}
-                onClick={startQuiz}
-                className="w-full rounded-2xl bg-blue-600 py-4 text-base font-bold text-white shadow-lg shadow-blue-600/25 dark:bg-[var(--learn-blue)]"
-              >
-                <span className="inline-flex items-center justify-center gap-2">
-                  <Play className="h-5 w-5" />
-                  {t({
-                    uz: 'Qo‘shimcha savollar',
-                    en: 'Extra questions',
-                    ru: 'Дополнительные вопросы',
-                  })}
-                </span>
-              </motion.button>
+              {outOfEnergy ? (
+                energyBanner
+              ) : (
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.98 }}
+                  onClick={startQuiz}
+                  className="w-full rounded-2xl bg-blue-600 py-4 text-base font-bold text-white shadow-lg shadow-blue-600/25 dark:bg-[var(--learn-blue)]"
+                >
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Play className="h-5 w-5" />
+                    {t({
+                      uz: 'Qo‘shimcha savollar',
+                      en: 'Extra questions',
+                      ru: 'Дополнительные вопросы',
+                    })}
+                  </span>
+                </motion.button>
+              )}
             </>
           ) : (
             <>
               {energyBanner}
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.98 }}
-                onClick={startQuiz}
-                className="w-full rounded-2xl py-4 text-base font-bold shadow-md transition bg-blue-600 text-white shadow-lg shadow-blue-600/25 dark:bg-[var(--learn-blue)]"
-              >
-                <span className="inline-flex items-center justify-center gap-2">
-                  <Play className="h-5 w-5" />
-                  {t({
-                    uz: 'Planni to‘ldirish',
-                    en: 'Fill the plan',
-                    ru: 'Выполнить план',
-                  })}
-                </span>
-              </motion.button>
+              {!outOfEnergy && (
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.98 }}
+                  onClick={startQuiz}
+                  className="w-full rounded-2xl py-4 text-base font-bold shadow-md transition bg-blue-600 text-white shadow-lg shadow-blue-600/25 dark:bg-[var(--learn-blue)]"
+                >
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Play className="h-5 w-5" />
+                    {t({
+                      uz: 'Planni to‘ldirish',
+                      en: 'Fill the plan',
+                      ru: 'Выполнить план',
+                    })}
+                  </span>
+                </motion.button>
+              )}
             </>
           )}
         </div>
@@ -687,7 +714,42 @@ export default function DailyPlanPage() {
             </h2>
           </div>
 
-          {question.type === 'MATCHING' ? (
+          {outOfEnergy && !feedback ? (
+            <div className="rounded-3xl border-2 border-amber-300/80 bg-amber-50 p-5 text-center dark:border-amber-500/40 dark:bg-amber-950/30">
+              <ZapOff className="mx-auto h-10 w-10 text-amber-600 dark:text-amber-300" />
+              <p className="mt-3 text-lg font-extrabold text-amber-950 dark:text-amber-100">
+                {t({
+                  uz: 'Energiya tugadi — javob berib bo‘lmaydi',
+                  en: 'Out of energy — answering is locked',
+                  ru: 'Энергия закончилась — ответы закрыты',
+                })}
+              </p>
+              <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-200/80">
+                {regenCountdown
+                  ? t({
+                      uz: `Keyingi energiya: ${regenCountdown}`,
+                      en: `Next energy in: ${regenCountdown}`,
+                      ru: `Следующая энергия через: ${regenCountdown}`,
+                    })
+                  : t({
+                      uz: 'Har soatda 1 ta energiya tiklanadi.',
+                      en: 'You get 1 energy every hour.',
+                      ru: '+1 энергия каждый час.',
+                    })}
+              </p>
+              <button
+                type="button"
+                onClick={backToSummary}
+                className="mt-4 w-full rounded-2xl bg-slate-700 py-3.5 text-base font-bold text-white dark:bg-slate-600"
+              >
+                {t({
+                  uz: 'Plan sahifasiga qaytish',
+                  en: 'Back to plan',
+                  ru: 'К плану',
+                })}
+              </button>
+            </div>
+          ) : question.type === 'MATCHING' ? (
             <MatchingBlock
               question={question}
               pairs={matchPairs}
@@ -731,18 +793,16 @@ export default function DailyPlanPage() {
                 setMatchLeftId(null);
               }}
               onSubmit={() => {
-                if (!pickable || submitLockRef.current) return;
-                submitLockRef.current = true;
-                matchingMut.mutate({
-                  questionId: question.id,
-                  pairs: matchPairs
+                submitMatch(
+                  question.id,
+                  matchPairs
                     .slice()
                     .sort((a, b) => a.pairIndex - b.pairIndex)
                     .map(({ leftOptionId, rightOptionId }) => ({
                       leftOptionId,
                       rightOptionId,
                     })),
-                });
+                );
               }}
             />
           ) : (
@@ -757,15 +817,7 @@ export default function DailyPlanPage() {
                       key={opt.id}
                       type="button"
                       disabled={!pickable}
-                      onClick={() => {
-                        if (!pickable || submitLockRef.current) return;
-                        submitLockRef.current = true;
-                        setSubmitError(null);
-                        answerMut.mutate({
-                          questionId: question.id,
-                          selectedOptionId: opt.id,
-                        });
-                      }}
+                      onClick={() => submitChoice(question.id, opt.id)}
                       className={clsx(
                         'w-full rounded-2xl border-2 px-4 py-3 text-left text-sm font-medium transition',
                         feedback && isRevealedCorrect
@@ -783,7 +835,7 @@ export default function DailyPlanPage() {
             </div>
           )}
 
-          {/* Feedback banner */}
+          {/* Feedback / energiya qulfi */}
           <AnimatePresence>
             {feedback && (
               <motion.div
@@ -822,39 +874,56 @@ export default function DailyPlanPage() {
                       </>
                     )}
                   </span>
-                  <span
-                    className={clsx(
-                      'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold',
-                      'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200',
-                    )}
-                  >
-                    <Zap className="h-3.5 w-3.5" /> -1
-                  </span>
+                  {feedback === 'wrong' ? (
+                    <span
+                      className={clsx(
+                        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold',
+                        'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200',
+                      )}
+                    >
+                      <Zap className="h-3.5 w-3.5" /> -1
+                    </span>
+                  ) : null}
                 </div>
                 {lastXpMessage && (feedback === 'correct' || isBonusDay) ? (
                   <p className="mt-2 text-sm font-medium text-amber-800 dark:text-amber-200">
                     {lastXpMessage}
                   </p>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={goNext}
-                  className={clsx(
-                    'mt-3 w-full rounded-2xl py-3.5 text-base font-bold shadow-md text-white',
-                    feedback === 'correct'
-                      ? 'bg-emerald-600 dark:bg-emerald-500'
-                      : 'bg-rose-600 dark:bg-rose-500',
-                  )}
-                >
-                  {t({ uz: 'Keyingi savol', en: 'Next question', ru: 'Следующий вопрос' })}
-                </button>
+                {outOfEnergy ? (
+                  <>
+                    <div className="mt-3">{energyBanner}</div>
+                    <button
+                      type="button"
+                      onClick={backToSummary}
+                      className="mt-3 w-full rounded-2xl bg-slate-700 py-3.5 text-base font-bold text-white shadow-md dark:bg-slate-600"
+                    >
+                      {t({
+                        uz: 'Plan sahifasiga qaytish',
+                        en: 'Back to plan',
+                        ru: 'К плану',
+                      })}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    className={clsx(
+                      'mt-3 w-full rounded-2xl py-3.5 text-base font-bold shadow-md text-white',
+                      feedback === 'correct'
+                        ? 'bg-emerald-600 dark:bg-emerald-500'
+                        : 'bg-rose-600 dark:bg-rose-500',
+                    )}
+                  >
+                    {t({ uz: 'Keyingi savol', en: 'Next question', ru: 'Следующий вопрос' })}
+                  </button>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
 
-          {noEnergyForWrong && <div className="mt-4">{energyBanner}</div>}
-
-          {submitError && !noEnergyForWrong && (
+          {submitError && !outOfEnergy && (
             <div className="mt-4 flex items-center gap-2 rounded-xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
               <XCircle className="h-5 w-5 shrink-0" />
               {submitError}

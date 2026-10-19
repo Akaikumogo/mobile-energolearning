@@ -9,6 +9,7 @@ import {
   Sparkles,
   XCircle,
   Zap,
+  ZapOff,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -54,7 +55,6 @@ export default function TheoryLessonPage() {
   const [revealedCorrectOptionId, setRevealedCorrectOptionId] = useState<
     string | null
   >(null);
-  const [outOfLives, setOutOfLives] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [matchLeftId, setMatchLeftId] = useState<string | null>(null);
   const [matchPairs, setMatchPairs] = useState<
@@ -78,9 +78,10 @@ export default function TheoryLessonPage() {
   }, [heartsCount, heartsMax]);
 
   const noLives = heartsKnown && heartsCount <= 0;
-  // To'g'ri javob energiya olmaydi — 0 energiyada ham urinish mumkin.
-  const canDoQuiz = devMode || !heartsKnown || true;
-  const blocked = outOfLives && heartsCount <= 0 && !devMode;
+  // 0 energiyada to‘g‘ri javob ham yopiladi — aks holda variantlarni
+  // ketma-ket bosib to‘g‘risini topish mumkin.
+  const canDoQuiz = devMode || !noLives;
+  const blocked = noLives && !devMode;
 
   // Keyingi +1 energiya taymeri (faqat energiya tugaganda ko'rsatiladi).
   // Taymer tugaganda progress-me yangilanadi va blok avtomatik ochiladi.
@@ -106,7 +107,6 @@ export default function TheoryLessonPage() {
     const data = axErr?.response?.data;
     if (axErr?.response?.status === 403 && data?.code === 'NO_HEARTS_LEFT') {
       applyHearts(data.state);
-      setOutOfLives(true);
       setSubmitError(null);
       return;
     }
@@ -133,7 +133,6 @@ export default function TheoryLessonPage() {
     setFeedback(null);
     setPickedOptionId(null);
     setRevealedCorrectOptionId(null);
-    setOutOfLives(false);
     setSubmitError(null);
     setLastXp(0);
   }, [theoryId, quizMode]);
@@ -269,12 +268,6 @@ export default function TheoryLessonPage() {
       setLastXp((x) => x + (res.xpEarned || 0));
       setLastXpMessage(res.xpMessage ?? null);
       applyHearts(res.hearts);
-      if (!res.isCorrect) {
-        const heartsLeft = res.hearts?.heartsCount ?? heartsCount - 1;
-        if (heartsLeft <= 0) {
-          setOutOfLives(true);
-        }
-      }
       queryClient.invalidateQueries({ queryKey: ['progress-me'] });
       queryClient.invalidateQueries({ queryKey: ['level-detail', levelId] });
     },
@@ -300,12 +293,6 @@ export default function TheoryLessonPage() {
       setLastXp((x) => x + (res.xpEarned || 0));
       setLastXpMessage(res.xpMessage ?? null);
       applyHearts(res.hearts);
-      if (!res.isCorrect) {
-        const heartsLeft = res.hearts?.heartsCount ?? heartsCount - 1;
-        if (heartsLeft <= 0) {
-          setOutOfLives(true);
-        }
-      }
       queryClient.invalidateQueries({ queryKey: ['progress-me'] });
       queryClient.invalidateQueries({ queryKey: ['level-detail', levelId] });
     },
@@ -328,7 +315,6 @@ export default function TheoryLessonPage() {
     setFeedback(null);
     setPickedOptionId(null);
     setRevealedCorrectOptionId(null);
-    setOutOfLives(false);
     setSubmitError(null);
     setLastXpMessage(null);
     setMatchLeftId(null);
@@ -745,7 +731,39 @@ export default function TheoryLessonPage() {
               </div>
             </div>
 
-            {question.type === 'MATCHING' ? (
+            {blocked && !feedback ? (
+              <div className="rounded-3xl border-2 border-amber-300/80 bg-amber-50 p-5 text-center dark:border-amber-500/40 dark:bg-amber-950/30">
+                <ZapOff className="mx-auto h-10 w-10 text-amber-600 dark:text-amber-300" />
+                <p className="mt-3 text-lg font-extrabold text-amber-950 dark:text-amber-100">
+                  {t({
+                    uz: 'Energiya tugadi — javob berib bo‘lmaydi',
+                    en: 'Out of energy — answering is locked',
+                    ru: 'Энергия закончилась — ответы закрыты',
+                  })}
+                </p>
+                <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-200/80">
+                  {regenCountdown
+                    ? t({
+                        uz: `Keyingi energiya: ${regenCountdown}`,
+                        en: `Next energy in: ${regenCountdown}`,
+                        ru: `Следующая энергия через: ${regenCountdown}`,
+                      })
+                    : t({
+                        uz: 'Har soatda 1 ta energiya tiklanadi.',
+                        en: 'You get 1 energy every hour.',
+                        ru: '+1 энергия каждый час.',
+                      })}
+                </p>
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => navigate('/learn', { replace: true })}
+                  className="mt-4 w-full rounded-2xl bg-slate-700 py-3.5 text-base font-bold text-white dark:bg-slate-600"
+                >
+                  {t({ uz: 'Bosh menyu', en: 'Main menu', ru: 'Главное меню' })}
+                </motion.button>
+              </div>
+            ) : question.type === 'MATCHING' ? (
               (() => {
                 const left = [...question.options].sort(
                   (a, b) => a.orderIndex - b.orderIndex,
