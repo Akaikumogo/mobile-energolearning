@@ -120,7 +120,34 @@ export default function LoginPage() {
                   en: 'Sign in with Energo ID',
                   ru: 'Войти через Energo ID',
                 })}
-          </button>
+            </button>
+
+          <p className="mt-4 text-center text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+            {t({
+              uz: 'Parolni unutdingizmi?',
+              en: 'Forgot your password?',
+              ru: 'Забыли пароль?',
+            })}
+            <br />
+            <a
+              href="https://t.me/EnergoItS"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-blue-600 underline underline-offset-2 dark:text-blue-400"
+            >
+              {t({
+                uz: 'Qayta tiklash uchun',
+                en: 'To reset it,',
+                ru: 'Чтобы восстановить,',
+              })}
+              <br />
+              {t({
+                uz: 'Telegram orqali aloqaga chiqing',
+                en: 'contact us on Telegram',
+                ru: 'напишите в Telegram',
+              })}
+            </a>
+          </p>
 
           <button
             type="button"

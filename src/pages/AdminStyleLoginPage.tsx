@@ -167,6 +167,33 @@ export default function LoginPage() {
             : t({ en: 'Login with Energo ID', uz: 'Energo ID orqali kirish', ru: '\u0412\u0445\u043e\u0434 \u0447\u0435\u0440\u0435\u0437 Energo ID' })}
         </button>
 
+        <p className="mb-4 text-center text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          {t({
+            uz: 'Parolni unutdingizmi?',
+            en: 'Forgot your password?',
+            ru: 'Забыли пароль?',
+          })}
+          <br />
+          <a
+            href="https://t.me/EnergoItS"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-[#2563EB] underline underline-offset-2 dark:text-[#60A5FA]"
+          >
+            {t({
+              uz: 'Qayta tiklash uchun',
+              en: 'To reset it,',
+              ru: 'Чтобы восстановить,',
+            })}
+            <br />
+            {t({
+              uz: 'Telegram orqali aloqaga chiqing',
+              en: 'contact us on Telegram',
+              ru: 'напишите в Telegram',
+            })}
+          </a>
+        </p>
+
         <div className="my-4 flex items-center gap-3 text-xs text-slate-400">
           <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
           {t({ en: 'or local superadmin', uz: 'yoki local superadmin', ru: '\u0438\u043b\u0438 \u043b\u043e\u043a\u0430\u043b\u044c\u043d\u044b\u0439 superadmin' })}
