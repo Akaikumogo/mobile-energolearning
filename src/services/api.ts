@@ -929,6 +929,7 @@ class MobileApiService {
       xpDeniedReason?: string | null;
       xpMessage?: string | null;
       hearts?: HeartsState;
+      planCorrectCount?: number;
     }>('/progress/answer', { questionId, selectedOptionId, source });
     return response.data;
   }
@@ -945,6 +946,7 @@ class MobileApiService {
       xpDeniedReason?: string | null;
       xpMessage?: string | null;
       hearts?: HeartsState;
+      planCorrectCount?: number;
     }>('/progress/matching', { questionId, pairs, source });
     return response.data;
   }

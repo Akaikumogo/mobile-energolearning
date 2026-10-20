@@ -21,6 +21,8 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useEnergyCountdown } from '@/hooks/useEnergyCountdown';
 import mobileApi from '@/services/api';
 import type {
+  DailyPlanNextResponse,
+  DailyPlanResponse,
   HeartsState,
   MyProgressResponse,
   MobileQuestion,
@@ -93,6 +95,35 @@ export default function DailyPlanPage() {
     outOfEnergy ? hearts?.nextRegenAt : null,
   );
 
+  const applyPlanCount = (count: number | undefined) => {
+    if (typeof count !== 'number' || Number.isNaN(count)) return;
+    queryClient.setQueryData<DailyPlanResponse>(['daily-plan-today'], (old) =>
+      old
+        ? {
+            ...old,
+            correctCount: count,
+            completionPercent:
+              (old.dailyGoalCorrect ?? 0) > 0
+                ? Math.min(100, Math.round((Math.min(count, old.dailyGoalCorrect) / old.dailyGoalCorrect) * 100))
+                : old.completionPercent,
+            completed:
+              (old.dailyGoalCorrect ?? 0) > 0 && count >= old.dailyGoalCorrect,
+          }
+        : old,
+    );
+    queryClient.setQueryData<DailyPlanNextResponse>(['daily-plan-next'], (old) =>
+      old
+        ? {
+            ...old,
+            progress: {
+              ...old.progress,
+              correctCount: count,
+            },
+          }
+        : old,
+    );
+  };
+
   const applyHearts = (h: HeartsState | null | undefined) => {
     if (!h) return;
     queryClient.setQueryData<MyProgressResponse>(['progress-me'], (old) =>
@@ -136,6 +167,7 @@ export default function DailyPlanPage() {
       setLastXpEarned(res.xpEarned || 0);
       setLastXpMessage(res.xpMessage ?? null);
       applyHearts(res.hearts);
+      applyPlanCount(res.planCorrectCount);
       queryClient.invalidateQueries({ queryKey: ['daily-plan-today'] });
       queryClient.invalidateQueries({ queryKey: ['progress-me'] });
     },
@@ -159,6 +191,7 @@ export default function DailyPlanPage() {
       setLastXpEarned(res.xpEarned || 0);
       setLastXpMessage(res.xpMessage ?? null);
       applyHearts(res.hearts);
+      applyPlanCount(res.planCorrectCount);
       queryClient.invalidateQueries({ queryKey: ['daily-plan-today'] });
       queryClient.invalidateQueries({ queryKey: ['progress-me'] });
     },
@@ -173,15 +206,15 @@ export default function DailyPlanPage() {
   const question: MobileQuestion | null = next?.question ?? null;
   const goal = next?.progress.dailyGoalCorrect ?? plan?.dailyGoalCorrect ?? 10;
 
-  // Server haqiqati + hozirgi javob (feedback paytida serverdan qayta
-  // so'ralmaydi, shu sababli optimistik +1).
-  const serverCorrect = next?.progress.correctCount ?? plan?.correctCount ?? 0;
+  // Ikki so'rovdan kattasi: eski next-question keshi 0 qolib, yangi hisobni
+  // yutib yubormasligi uchun.
+  const serverCorrect = Math.max(
+    next?.progress.correctCount ?? 0,
+    plan?.correctCount ?? 0,
+  );
   const serverExtra =
     next?.progress.extraCorrectCount ?? plan?.extraCorrectCount ?? 0;
-  const displayCorrect = Math.min(
-    goal,
-    serverCorrect + (feedback === 'correct' && serverCorrect < goal ? 1 : 0),
-  );
+  const displayCorrect = Math.min(goal, serverCorrect);
   const displayExtra =
     serverExtra +
     (feedback === 'correct' && serverCorrect >= goal ? 1 : 0);
