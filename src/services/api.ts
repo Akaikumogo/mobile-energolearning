@@ -183,6 +183,7 @@ export type PublicIdCard = {
   firstName?: string;
   middleName?: string;
   positionTitle: string;
+  qualificationGroup?: string | null;
   branchName: string;
   organizationTitle: string;
   issuedAt: string | null;
@@ -191,6 +192,31 @@ export type PublicIdCard = {
   avatarUrl: string | null;
   personnelNumber: string | null;
   verifyUrl?: string;
+  safetyBadge?: PublicSafetyBadge | null;
+};
+
+export type PublicSafetyExam = {
+  code: string;
+  shortLabel?: string;
+  titleUz?: string;
+  examDate: string | null;
+  examReason?: string | null;
+  nextExamDate: string | null;
+  grade: string | null;
+  qualificationGroup: string | null;
+  ruleName?: string | null;
+  commissionDecision?: string | null;
+  protocolNumber?: string | null;
+  protocolDate?: string | null;
+  doctorConclusion?: string | null;
+  commissionChairName?: string | null;
+  medicalResponsibleName?: string | null;
+};
+
+export type PublicSafetyBadge = {
+  exams: PublicSafetyExam[];
+  specialWorks?: string;
+  specialWorkType?: string;
 };
 
 export type LoginResponse = {

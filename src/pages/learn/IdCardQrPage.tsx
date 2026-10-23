@@ -12,7 +12,12 @@ import {
   X,
 } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
-import mobileApi, { resolveMediaUrl, type PublicIdCard } from '@/services/api';
+import mobileApi, {
+  resolveMediaUrl,
+  type PublicIdCard,
+  type PublicSafetyBadge,
+  type PublicSafetyExam,
+} from '@/services/api';
 import { CertificateQr } from '@/components/certificate/CertificateQr';
 import {
   CertificateCard,
@@ -72,6 +77,7 @@ function toCertificate(card: PublicIdCard): EmployeeCertificate {
     firstName: card.firstName ?? '',
     middleName: card.middleName ?? '',
     positionTitle: card.positionTitle,
+    qualificationGroup: card.qualificationGroup,
     personnelNumber: card.personnelNumber,
     examAttemptId: null,
     issuedAt: card.issuedAt,
@@ -342,8 +348,12 @@ export default function IdCardQrPage() {
                       value={scannedCard.fullName}
                     />
                     <Info
-                      label={t({ uz: 'Lavozim', en: 'Position', ru: 'Должность' })}
-                      value={scannedCard.positionTitle || '—'}
+                      label={t({
+                        uz: 'Malaka guruhi',
+                        en: 'Qualification group',
+                        ru: 'Группа допуска',
+                      })}
+                      value={scannedCard.qualificationGroup || '—'}
                     />
                     <Info
                       label={t({ uz: 'Filial', en: 'Branch', ru: 'Филиал' })}
@@ -362,6 +372,7 @@ export default function IdCardQrPage() {
                       value={formatCertificateDate(scannedCard.validUntil)}
                     />
                   </dl>
+                  <SafetyScanTables badge={scannedQuery.data?.safetyBadge} />
                 </div>
               )}
             </div>
@@ -406,6 +417,113 @@ export default function IdCardQrPage() {
           </button>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+const SCAN_SECTIONS: { code: string; title: string }[] = [
+  {
+    code: 'TECHNICAL_OPERATION',
+    title: 'Elektr stansiyalari va tarmoqlarining texnik ekspluatatsiyasi',
+  },
+  {
+    code: 'OCCUPATIONAL_SAFETY',
+    title: 'Mehnat muhofazasi / texnika xavfsizligi',
+  },
+  { code: 'FIRE_SAFETY', title: 'Yong‘in xavfsizligi' },
+  { code: 'INDUSTRIAL_SAFETY', title: 'Sanoat xavfsizligi / temir yo‘l' },
+  { code: 'MEDICAL_EXAM', title: 'Tibbiy ko‘rik' },
+];
+
+function scanCell(value?: string | null) {
+  const text = value?.trim();
+  return text && text !== '—' ? text : '—';
+}
+
+function scanFilled(exam: PublicSafetyExam) {
+  return [
+    exam.examDate,
+    exam.examReason,
+    exam.grade,
+    exam.qualificationGroup,
+    exam.nextExamDate,
+    exam.ruleName,
+    exam.commissionDecision,
+    exam.protocolNumber,
+    exam.protocolDate,
+    exam.doctorConclusion,
+    exam.commissionChairName,
+    exam.medicalResponsibleName,
+  ].some((value) => {
+    const text = value?.trim();
+    return !!text && text !== '—';
+  });
+}
+
+function SafetyScanTables({ badge }: { badge?: PublicSafetyBadge | null }) {
+  const byCode = new Map((badge?.exams ?? []).map((exam) => [exam.code, exam]));
+  return (
+    <div className="space-y-3 pt-2">
+      {SCAN_SECTIONS.map((section) => {
+        const exam = byCode.get(section.code);
+        const filled = exam ? scanFilled(exam) : false;
+        const isMedical = section.code === 'MEDICAL_EXAM';
+        const isIndustrial = section.code === 'INDUSTRIAL_SAFETY';
+        const isOccupational = section.code === 'OCCUPATIONAL_SAFETY';
+        const rows: { label: string; value: string }[] = isMedical
+          ? [
+              { label: 'Ko‘rik sanasi', value: scanCell(exam?.examDate) },
+              { label: 'Shifokor xulosasi', value: scanCell(exam?.doctorConclusion) },
+              { label: 'Javobgar shaxs', value: scanCell(exam?.medicalResponsibleName) },
+            ]
+          : isIndustrial
+            ? [
+                { label: 'Sinov sanasi', value: scanCell(exam?.examDate) },
+                { label: 'Qoida nomi', value: scanCell(exam?.ruleName) },
+                { label: 'Komissiya qarori', value: scanCell(exam?.commissionDecision) },
+                { label: 'Bayonnoma №', value: scanCell(exam?.protocolNumber) },
+                { label: 'Bayonnoma sanasi', value: scanCell(exam?.protocolDate) },
+                { label: 'Keyingi sinov', value: scanCell(exam?.nextExamDate) },
+                { label: 'Komissiya raisi', value: scanCell(exam?.commissionChairName) },
+              ]
+            : [
+                { label: 'Sinov sanasi', value: scanCell(exam?.examDate) },
+                { label: 'Sinov sababi', value: scanCell(exam?.examReason) },
+                ...(isOccupational
+                  ? [{ label: 'Malaka guruhi', value: scanCell(exam?.qualificationGroup) }]
+                  : []),
+                { label: 'Baho', value: scanCell(exam?.grade) },
+                { label: 'Keyingi sinov', value: scanCell(exam?.nextExamDate) },
+                { label: 'Komissiya raisi', value: scanCell(exam?.commissionChairName) },
+              ];
+        return (
+          <section
+            key={section.code}
+            className="rounded-2xl border border-slate-200 p-3 dark:border-[var(--learn-border)]"
+          >
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+              {section.title}
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">
+              {filled ? `Joriy: ${scanCell(exam?.examDate)} · Tasdiqlangan` : 'Yozuvlar yo‘q'}
+            </p>
+            {filled ? (
+              <dl className="mt-2 space-y-1.5">
+                {rows.map((row) => (
+                  <div key={row.label} className="flex justify-between gap-3 text-xs">
+                    <dt className="text-slate-500">{row.label}</dt>
+                    <dd className="m-0 text-right font-medium text-slate-900 dark:text-white">
+                      {row.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className="mt-2 text-xs text-slate-500">Yozuvlar yo‘q</p>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }
