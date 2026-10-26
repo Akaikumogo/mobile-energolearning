@@ -1060,6 +1060,43 @@ class MobileApiService {
     await this.api.patch(`/notifications/${id}/read`);
   }
 
+  async enterProctorRoom(token: string) {
+    const response = await this.api.post('/proctor/enter', { token });
+    return response.data as {
+      id: string;
+      standardName: string;
+      scheduledAt: string;
+      status: string;
+      accessToken: string;
+    };
+  }
+
+  async myProctorRooms() {
+    const response = await this.api.get('/proctor/my/rooms');
+    return response.data as Array<{
+      id: string;
+      standardName: string;
+      scheduledAt: string;
+      status: string;
+      accessToken: string;
+    }>;
+  }
+
+  async myProctorResults() {
+    const response = await this.api.get('/proctor/my/results');
+    return response.data as Array<{
+      examinationName: string;
+      examDate: string | null;
+      questionCount: number;
+      correctCount: number;
+      scorePercent: number;
+      gradeLabel: string;
+      passed: boolean;
+      nextExamDate: string | null;
+      status: string;
+    }>;
+  }
+
   async examLiveMyHistory(): Promise<ExamLiveHistoryRow[]> {
     const response = await this.api.get<ExamLiveHistoryRow[]>(
       '/exams/live/me/history'

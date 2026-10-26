@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Languages } from 'lucide-react';
 import clsx from 'clsx';
 import { CheerfulBackLink } from '@/components/CheerfulBackLink';
@@ -26,6 +27,7 @@ function UnreadDot({ show }: { show: boolean }) {
 
 export default function NewsPage() {
   const { t, lang, setLang } = useTranslation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const cyrillicText = useCyrillicNewsText();
   const readIds = useReadNewsIds();
@@ -111,6 +113,10 @@ export default function NewsPage() {
             key={n.id}
             onClick={() => {
               if (!n.isRead && !markReadMut.isPending) markReadMut.mutate(n.id);
+              const data = n.data as { type?: string; token?: string } | null;
+              if (data?.type === 'proctor_room' && data.token) {
+                navigate(`/learn/proctor?token=${encodeURIComponent(data.token)}`);
+              }
             }}
             className={clsx(
               'rounded-3xl border bg-white p-4 shadow-sm dark:bg-[var(--learn-card)]',
